@@ -8,13 +8,9 @@ services:
     environment:
       - NODE_ENV=development
       - VITE_SENTRY_DSN=${VITE_SENTRY_DSN:-}
+      - CHOKIDAR_USEPOLLING=true
     volumes:
       - .:/app
       - /app/node_modules
-    develop:
-      watch:
-        - action: sync
-          path: .
-          target: /app
-        - action: rebuild
-          path: package.json
+    stdin_open: true
+    tty: true
