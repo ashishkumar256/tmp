@@ -10,7 +10,8 @@ sed -i "s|^# CSRF_COOKIE_SECURE = True|CSRF_COOKIE_SECURE = True|" /etc/sentry/s
 
 cat <<'EOF' >> /etc/sentry/sentry.conf.py
 SENTRY_BEACON = False
-SENTRY_ALLOW_ORIGIN=["*"]
+SENTRY_ALLOW_ORIGIN="*"
+EOF
 
 # # Allow Django to trust frontend origins for CSRF
 # CSRF_TRUSTED_ORIGINS = [
@@ -23,7 +24,7 @@ SENTRY_ALLOW_ORIGIN=["*"]
 #     if mw != "django.middleware.csrf.CsrfViewMiddleware"
 # ]
 
-EOF
+
 
 sentry upgrade --noinput
 
