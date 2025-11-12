@@ -161,7 +161,6 @@ sed -i "s|^# CSRF_COOKIE_SECURE = True|CSRF_COOKIE_SECURE = True|" /etc/sentry/s
 echo "SENTRY_BEACON = False" >> /etc/sentry/sentry.conf.py
 echo "SENTRY_OPTIONS['system.allowed-origins'] = ['https://*.killercoda.com']" >> /etc/sentry/sentry.conf.py
 
-diff -y  /tmp/sentry.conf.py.bakup /etc/sentry/sentry.conf.py
 
 sentry upgrade --noinput
 
