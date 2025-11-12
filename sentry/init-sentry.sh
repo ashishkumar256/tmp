@@ -17,6 +17,17 @@ CSRF_TRUSTED_ORIGINS = [
     "https://*.killercoda.com",
 ]
 
+CSRF_COOKIE_SECURE = False  # Set to True if using HTTPS
+CSRF_COOKIE_HTTPONLY = False
+
+# CORS settings for API endpoints
+CORS_ALLOW_ALL_ORIGINS = True  # For development only
+CORS_ALLOW_CREDENTIALS = True
+
+# Session settings
+SESSION_COOKIE_SECURE = False  # Set to True if using HTTPS
+SESSION_COOKIE_SAMESITE = 'Lax'
+
 EOF
 
 # # Allow Django to trust frontend origins for CSRF
