@@ -1,0 +1,51 @@
+version: "3.9"
+
+services:
+  postgres:
+    container_name: postgres
+    image: postgres:18.0-alpine3.22
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    expose:
+      - 5432
+
+  redis:
+    container_name: redis
+    image: redis:8.2.3-alpine3.22
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+    expose:
+      - 6379
+
+  sentry:
+    container_name: sentry
+    image: ghcr.io/getsentry/sentry:25.10.0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8080:9000"
+    environment:
+      SENTRY_SECRET_KEY: "replace-with-a-secure-random-value"
+      SENTRY_POSTGRES_HOST: postgres
+      SENTRY_POSTGRES_PORT: 5432
+      SENTRY_DB_USER: postgres
+      SENTRY_DB_NAME: postgres
+      SENTRY_REDIS_HOST: redis
+      SENTRY_LOG_LEVEL: DEBUG
+      SENTRY_ADMIN_EMAIL: admin@gmail.com
+      SENTRY_ADMIN_PASSWORD: Test@123
+    command: ["sh", "-x", "/tmp/init-sentry.sh"]
+    volumes:
+      - ./init-sentry.sh:/tmp/init-sentry.sh:ro      
+volumes:
+  postgres_data:
