@@ -154,7 +154,11 @@ set -e
 # Run migrations / upgrade
 echo "Running sentry upgrade..."
 # sed -i 's/^SENTRY_USE_RELAY *= *.*/SENTRY_USE_RELAY = False/' /etc/sentry/sentry.conf.py
+sed -i 's/^# SECURE_PROXY_SSL_HEADER =/SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')/' /etc/sentry/sentry.conf.py
+sed -i 's/^# SESSION_COOKIE_SECURE = True/SESSION_COOKIE_SECURE = True/' /etc/sentry/sentry.conf.py
+sed -i 's/^# CSRF_COOKIE_SECURE = True/CSRF_COOKIE_SECURE = True/' /etc/sentry/sentry.conf.py
 echo "SENTRY_BEACON = False" >> /etc/sentry/sentry.conf.py
+
 sentry upgrade --noinput
 
 # Create superuser if environment variables provided
