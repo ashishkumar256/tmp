@@ -10,12 +10,20 @@ sed -i "s|^# CSRF_COOKIE_SECURE = True|CSRF_COOKIE_SECURE = True|" /etc/sentry/s
 
 cat <<'EOF' >> /etc/sentry/sentry.conf.py
 SENTRY_BEACON = False
-SENTRY_OPTIONS["system.allowed-origins"] = ["https://*.killercoda.com", "http://*.killercoda.com"]
+SENTRY_OPTIONS["system.allowed-origins"] = [
+    "https://*.killercoda.com",
+    "http://*.killercoda.com"
+]
 
 # Allow Django to trust frontend origins for CSRF
 CSRF_TRUSTED_ORIGINS = [
     "https://*.killercoda.com",
     "http://*.killercoda.com",
+]
+
+MIDDLEWARE = [
+    mw for mw in globals().get("MIDDLEWARE", [])
+    if mw != "django.middleware.csrf.CsrfViewMiddleware"
 ]
 
 EOF
