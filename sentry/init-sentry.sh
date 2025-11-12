@@ -10,7 +10,7 @@ sed -i "s|^# CSRF_COOKIE_SECURE = True|CSRF_COOKIE_SECURE = True|" /etc/sentry/s
 
 cat <<'EOF' >> /etc/sentry/sentry.conf.py
 SENTRY_BEACON = False
-SENTRY_OPTIONS["system.allowed-origins"] = ["*", "0.0.0.0", "::/0"]
+SENTRY_OPTIONS["system.allowed-origins"] = ["https://*.killercoda.com", "http://*.killercoda.com"]
 EOF
 
 sentry upgrade --noinput
