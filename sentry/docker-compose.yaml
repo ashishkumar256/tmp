@@ -24,6 +24,38 @@ services:
     expose:
       - 6379
 
+  zookeeper:
+    container_name: zookeeper
+    image: confluentinc/cp-zookeeper:7.8.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    healthcheck:
+      test: echo stat | nc localhost 2181
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  kafka:
+    container_name: kafka
+    image: confluentinc/cp-kafka:7.8.0
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    healthcheck:
+      test: ["CMD", "kafka-topics", "--bootstrap-server", "kafka:9092", "--list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    expose:
+      - 9092
+
   sentry:
     container_name: sentry
     image: ashishkumar256/sentry:25.10.0
@@ -31,6 +63,8 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
     ports:
       - "8080:9000"
@@ -44,8 +78,11 @@ services:
       SENTRY_LOG_LEVEL: DEBUG
       SENTRY_ADMIN_EMAIL: admin@gmail.com
       SENTRY_ADMIN_PASSWORD: Test@123
+      SENTRY_KAFKA_HOSTS: kafka:9092
+      SENTRY_KAFKA_CLUSTER_NAME: default
     command: ["sh", "-x", "/tmp/init-sentry.sh"]
     volumes:
-      - ./init-sentry.sh:/tmp/init-sentry.sh:ro      
+      - ./init-sentry.sh:/tmp/init-sentry.sh:ro
+
 volumes:
   postgres_data:
