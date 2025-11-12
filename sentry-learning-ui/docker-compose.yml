@@ -1,7 +1,8 @@
 version: '3.8'
 
 services:
-  sentry-learning-ui:
+  ui:
+    container_name: react
     build: .
     ports:
       - "80:3000"
