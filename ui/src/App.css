@@ -130,9 +130,31 @@ body {
   background: #e67e22;
 }
 
+.btn-success {
+  background: #27ae60;
+  color: white;
+}
+
+.btn-success:hover {
+  background: #219a52;
+}
+
 .btn-primary {
   background: #2ecc71;
   color: white;
+}
+
+.btn:disabled {
+  background: #bdc3c7;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn:disabled:hover {
+  background: #bdc3c7;
+  transform: none;
+  box-shadow: none;
 }
 
 /* Error and Success Messages */
@@ -200,6 +222,7 @@ body {
   gap: 1rem;
   margin: 2rem 0;
   justify-content: center;
+  flex-wrap: wrap;
 }
 
 .action-buttons .btn {
@@ -272,10 +295,25 @@ body {
   margin-bottom: 1rem;
 }
 
+.error-fallback p {
+  margin-bottom: 1.5rem;
+  font-size: 1.1rem;
+}
+
 .error-fallback details {
   margin: 1rem 0;
   text-align: left;
   max-width: 600px;
+  width: 100%;
+}
+
+.error-fallback summary {
+  cursor: pointer;
+  padding: 0.5rem;
+  background: #f5f5f5;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
 }
 
 .error-fallback pre {
@@ -285,6 +323,7 @@ body {
   overflow-x: auto;
   font-size: 0.9rem;
   margin: 0.5rem 0;
+  border: 1px solid #e5e5e5;
 }
 
 /* Responsive Design */
@@ -326,6 +365,14 @@ body {
     width: 100%;
     text-align: left;
   }
+  
+  .error-fallback {
+    padding: 1rem;
+  }
+  
+  .error-fallback h2 {
+    font-size: 1.5rem;
+  }
 }
 
 @media (max-width: 480px) {
@@ -345,5 +392,32 @@ body {
   .btn {
     padding: 10px 20px;
     font-size: 0.9rem;
+  }
+  
+  .action-buttons .btn {
+    min-width: 120px;
+  }
+  
+  .text-input {
+    padding: 10px 14px;
+    font-size: 0.9rem;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .action-buttons,
+  .sentry-demo-info {
+    display: none;
+  }
+  
+  .app-header {
+    background: white !important;
+    color: black !important;
+    border-bottom: 2px solid #000;
+  }
+  
+  .btn {
+    display: none;
   }
 }

@@ -1,20 +1,24 @@
 import React, { useState, useCallback, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
-import * as Sentry from '@sentry/react';
+import * as Sentry from './Sentry';
+import ErrorBoundary from './ErrorBoundary';
 import './App.css';
-
-// Initialize Sentry
-Sentry.init({
-  dsn: import.meta.env.VITE_SENTRY_DSN || "",
-  environment: "development",
-  debug: true,
-});
 
 function MemoryCalculator() {
   const [lengthInput, setLengthInput] = useState('');
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const inputRef = useRef(null);
+
+  // Only allow numbers (integers) in input
+  const handleInputChange = useCallback((e) => {
+    const value = e.target.value;
+    // Only allow digits (no decimals, no negative signs, no letters)
+    if (value === '' || /^\d+$/.test(value)) {
+      setLengthInput(value);
+      setError('');
+    }
+  }, []);
 
   const bytesForArrayLength = useCallback((length) => {
     return BigInt(length) * BigInt(8);
@@ -46,15 +50,14 @@ function MemoryCalculator() {
     }
 
     try {
-      // Validate input is a valid number
-      if (!/^-?\d+$/.test(input)) {
-        throw new Error('Invalid input. Must be a whole number.');
-      }
-
       const length = BigInt(input);
       
       if (length < 0n) {
         throw new Error('Array length cannot be negative');
+      }
+
+      if (length === 0n) {
+        throw new Error('Array length cannot be zero');
       }
 
       // This is where the unhandled RangeError will occur for very large numbers
@@ -115,7 +118,14 @@ function MemoryCalculator() {
   // Test with a specific large number that causes RangeError
   const testLargeNumberError = () => {
     setLengthInput('1000000000000000000000000000000000000000000000000');
-    // Don't call handleCalculate immediately - let user click Calculate to see the natural error
+    setError('');
+    inputRef.current?.focus();
+  };
+
+  // Test with a reasonable number that works
+  const testWorkingNumber = () => {
+    setLengthInput('1000000');
+    setError('');
     inputRef.current?.focus();
   };
 
@@ -134,14 +144,17 @@ function MemoryCalculator() {
               type="text"
               placeholder="e.g., 1000000"
               value={lengthInput}
-              onChange={(e) => setLengthInput(e.target.value)}
+              onChange={handleInputChange}
               onKeyUp={handleKeyUp}
               className="text-input"
               ref={inputRef}
+              inputMode="numeric"
+              pattern="[0-9]*"
             />
             <button
               className="btn btn-calculate"
               onClick={handleCalculate}
+              disabled={!lengthInput.trim()}
             >
               Calculate
             </button>
@@ -180,6 +193,9 @@ function MemoryCalculator() {
           <button onClick={clearResults} className="btn btn-secondary">
             Clear
           </button>
+          <button onClick={testWorkingNumber} className="btn btn-success">
+            Test Working Number
+          </button>
           <button onClick={testLargeNumberError} className="btn btn-warning">
             Test Large Number
           </button>
@@ -194,7 +210,8 @@ function MemoryCalculator() {
             <li>Estimates memory usage assuming each array element is a JavaScript Number (8 bytes)</li>
             <li>Shows both bytes and bits for the estimated memory usage</li>
             <li>Converts large values to human-readable format (KB, MB, GB, etc.)</li>
-            <li><strong>Demo:</strong> Enter very large numbers (like 1e30) to trigger "Invalid array length" errors that are automatically captured by Sentry</li>
+            <li><strong>Integer-only input:</strong> Only whole numbers are allowed</li>
+            <li><strong>Demo:</strong> Enter very large numbers to trigger "Invalid array length" errors captured by Sentry</li>
           </ul>
         </div>
 
@@ -210,54 +227,6 @@ function MemoryCalculator() {
       </div>
     </div>
   );
-}
-
-// Error Boundary component
-class ErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false, error: null, errorInfo: null };
-  }
-
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error, errorInfo) {
-    console.error('Error caught by boundary:', error);
-    this.setState({ errorInfo });
-    
-    // Capture React render errors in Sentry
-    Sentry.captureException(error, { 
-      extra: { 
-        componentStack: errorInfo.componentStack,
-        errorBoundary: true
-      } 
-    });
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="error-fallback">
-          <h2>🚨 Application Crashed!</h2>
-          <p>This error has been automatically reported to Sentry.</p>
-          <details>
-            <summary>Error Details</summary>
-            <pre>{this.state.error?.toString()}</pre>
-            <pre>Component Stack:\n{this.state.errorInfo?.componentStack}</pre>
-          </details>
-          <button
-            onClick={() => window.location.reload()}
-            className="btn btn-primary"
-          >
-            Reload Application
-          </button>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
 }
 
 // Main App component with Error Boundary
