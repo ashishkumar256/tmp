@@ -41,6 +41,15 @@ body {
   font-size: 1.1rem;
 }
 
+.env-info {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  display: inline-block;
+  font-size: 0.9rem;
+}
+
 .calculator-container {
   max-width: 600px;
   margin: 0 auto;
@@ -324,6 +333,8 @@ body {
   font-size: 0.9rem;
   margin: 0.5rem 0;
   border: 1px solid #e5e5e5;
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
 
 /* Responsive Design */
@@ -373,6 +384,11 @@ body {
   .error-fallback h2 {
     font-size: 1.5rem;
   }
+  
+  .env-info {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+  }
 }
 
 @media (max-width: 480px) {
@@ -402,6 +418,14 @@ body {
     padding: 10px 14px;
     font-size: 0.9rem;
   }
+  
+  .app-header h1 {
+    font-size: 1.3rem;
+  }
+  
+  .app-header p {
+    font-size: 0.9rem;
+  }
 }
 
 /* Print Styles */
@@ -419,5 +443,62 @@ body {
   
   .btn {
     display: none;
+  }
+  
+  .env-info {
+    background: #f5f5f5 !important;
+    color: #333 !important;
+    border: 1px solid #ccc;
+  }
+}
+
+/* Loading state for better UX */
+.calculating {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.calculating::after {
+  content: '...';
+  animation: dots 1.5s steps(4, end) infinite;
+}
+
+@keyframes dots {
+  0%, 20% { color: rgba(0,0,0,0); text-shadow: .25em 0 0 rgba(0,0,0,0), .5em 0 0 rgba(0,0,0,0); }
+  40% { color: white; text-shadow: .25em 0 0 rgba(0,0,0,0), .5em 0 0 rgba(0,0,0,0); }
+  60% { text-shadow: .25em 0 0 white, .5em 0 0 rgba(0,0,0,0); }
+  80%, 100% { text-shadow: .25em 0 0 white, .5em 0 0 white; }
+}
+
+/* Focus styles for accessibility */
+.btn:focus,
+.text-input:focus {
+  outline: 2px solid #3498db;
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .btn {
+    border: 2px solid;
+  }
+  
+  .text-input {
+    border: 2px solid;
+  }
+  
+  .memory-result {
+    border: 2px solid #000;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .btn {
+    transition: none;
+  }
+  
+  .btn:hover {
+    transform: none;
   }
 }

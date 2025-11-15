@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
-import * as Sentry from './Sentry';
+import { Sentry } from './Sentry';
 import ErrorBoundary from './ErrorBoundary';
 import './App.css';
 
@@ -61,7 +61,6 @@ function MemoryCalculator() {
       }
 
       // This is where the unhandled RangeError will occur for very large numbers
-      // We're intentionally NOT wrapping this in try-catch to demonstrate Sentry capturing unhandled errors
       const lenNum = Number(length);
       const arr = new Array(lenNum); // This will throw RangeError for very large numbers
       
@@ -74,25 +73,29 @@ function MemoryCalculator() {
         bits: bytes * 8n
       });
 
-      // Log to Sentry for demo purposes
-      Sentry.captureMessage("Array memory calculation completed", {
-        level: 'info',
-        extra: {
-          arrayLength: lenNum,
-          memoryBytes: bytes.toString(),
-          memoryReadable: humanReadable(bytes)
-        }
-      });
+      // Log to Sentry for demo purposes - only if Sentry is available
+      if (Sentry && Sentry.captureMessage) {
+        Sentry.captureMessage("Array memory calculation completed", {
+          level: 'info',
+          extra: {
+            arrayLength: lenNum,
+            memoryBytes: bytes.toString(),
+            memoryReadable: humanReadable(bytes)
+          }
+        });
+      }
 
     } catch (err) {
       console.error('Calculation error:', err);
       setError(err.message);
       
-      // Capture handled errors in Sentry
-      Sentry.captureException(err, {
-        tags: { type: 'calculation_error' },
-        extra: { input: lengthInput }
-      });
+      // Capture handled errors in Sentry - only if Sentry is available
+      if (Sentry && Sentry.captureException) {
+        Sentry.captureException(err, {
+          tags: { type: 'calculation_error' },
+          extra: { input: lengthInput }
+        });
+      }
     }
   }, [lengthInput, bytesForArrayLength, humanReadable]);
 
@@ -134,6 +137,9 @@ function MemoryCalculator() {
       <header className="app-header">
         <h1>JavaScript Array Memory Calculator</h1>
         <p>Estimate memory usage for JavaScript arrays</p>
+        <div className="env-info">
+          <strong>Sentry Status:</strong> {import.meta.env.VITE_SENTRY_DSN ? 'Active' : 'Not Configured'}
+        </div>
       </header>
 
       <div className="calculator-container">
@@ -222,6 +228,7 @@ function MemoryCalculator() {
             <li><strong>Error Context:</strong> Sentry records the input value, stack trace, and user actions</li>
             <li><strong>Real-time Monitoring:</strong> Errors appear in your Sentry dashboard immediately</li>
             <li><strong>Error Boundaries:</strong> React errors are gracefully handled with recovery options</li>
+            <li><strong>Current Status:</strong> {import.meta.env.VITE_SENTRY_DSN ? 'Sentry Active' : 'Sentry Not Configured'}</li>
           </ul>
         </div>
       </div>
