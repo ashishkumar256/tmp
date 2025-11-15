@@ -7,7 +7,7 @@
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #f5f5f5;
   min-height: 100vh;
 }
 
@@ -18,190 +18,141 @@ body {
 /* App Styles */
 .app {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  background: white;
 }
 
 .app-header {
   text-align: center;
   padding: 2rem;
+  background: #2c3e50;
   color: white;
+  border-bottom: 1px solid #ddd;
 }
 
 .app-header h1 {
   margin: 0;
-  font-size: 2.5rem;
+  font-size: 2rem;
+  font-weight: 600;
 }
 
 .app-header p {
-  margin: 1rem 0 0 0;
+  margin: 0.5rem 0 0 0;
   opacity: 0.9;
+  font-size: 1.1rem;
 }
 
-.env-info {
-  margin-top: 1rem;
-  padding: 0.5rem;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  display: inline-block;
-}
-
-.dashboard {
-  max-width: 1000px;
+.calculator-container {
+  max-width: 600px;
   margin: 0 auto;
-  padding: 0 2rem 2rem;
-}
-
-.stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
-
-.stat-card {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 12px;
-  text-align: center;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.stat-card h3 {
-  margin: 0 0 1rem 0;
-  color: #666;
-  font-size: 0.9rem;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.counter {
-  font-size: 2rem;
-  font-weight: bold;
-  color: #667eea;
-  margin: 0;
-}
-
-.status {
-  font-size: 1.2rem;
-  font-weight: bold;
-  color: #10b981;
-  margin: 0;
-}
-
-.controls {
-  background: white;
   padding: 2rem;
-  border-radius: 12px;
+}
+
+.input-section {
   margin-bottom: 2rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.controls h2 {
-  margin-top: 0;
+.input-section h2 {
+  margin-bottom: 1rem;
   color: #333;
+  font-size: 1.2rem;
+  font-weight: 500;
 }
 
-.button-group {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-  margin: 1.5rem 0;
-}
-
-.btn {
-  padding: 12px 20px;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-align: center;
-}
-
-.btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-.btn-danger {
-  background: #ef4444;
-  color: white;
-}
-
-.btn-warning {
-  background: #f59e0b;
-  color: white;
-}
-
-.btn-info {
-  background: #3b82f6;
-  color: white;
-}
-
-.btn-primary {
-  background: #8b5cf6;
-  color: white;
-}
-
-.btn-secondary {
-  background: #6b7280;
-  color: white;
-}
-
-.btn-success {
-  background: #10b981;
-  color: white;
-}
-
-.btn-test {
-  background: #8b5cf6;
-  color: white;
-}
-
-.btn-clear {
-  background: #6b7280;
-  color: white;
-  padding: 8px 16px;
-  font-size: 0.9rem;
-}
-
-/* Memory Calculator Styles */
 .input-group {
   display: flex;
   gap: 1rem;
-  margin: 1.5rem 0;
-  align-items: flex-end;
+  align-items: stretch;
 }
 
 .text-input {
-  width: 100%;
-  padding: 12px;
-  border: 2px solid #e2e8f0;
-  border-radius: 8px;
+  flex: 1;
+  padding: 12px 16px;
+  border: 2px solid #e1e5e9;
+  border-radius: 6px;
   font-size: 1rem;
-  margin-bottom: 1rem;
-  box-sizing: border-box;
+  font-family: inherit;
 }
 
 .text-input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #3498db;
 }
 
-.input-group .text-input {
-  flex: 1;
-  margin-bottom: 0;
+.btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-calculate {
+  background: #3498db;
+  color: white;
+}
+
+.btn-calculate:hover {
+  background: #2980b9;
+}
+
+.btn-secondary {
+  background: #95a5a6;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: #7f8c8d;
+}
+
+.btn-danger {
+  background: #e74c3c;
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #c0392b;
+}
+
+.btn-primary {
+  background: #2ecc71;
+  color: white;
+}
+
+.error-message {
+  background: #fee;
+  border: 1px solid #e74c3c;
+  border-radius: 6px;
+  padding: 1rem;
+  margin: 1rem 0;
+  color: #c0392b;
+  font-weight: 500;
+}
+
+.success-message {
+  background: #efffee;
+  border: 1px solid #27ae60;
+  border-radius: 6px;
+  padding: 1rem;
+  margin: 1rem 0;
+  color: #27ae60;
+  font-weight: 500;
+}
+
+.result-section {
+  margin: 1.5rem 0;
 }
 
 .memory-result {
-  margin-top: 1rem;
-}
-
-.memory-display {
-  background: #f8fafc;
-  border-radius: 8px;
+  background: #f8f9fa;
+  border-radius: 6px;
   padding: 1.5rem;
   margin-top: 1rem;
 }
@@ -210,146 +161,56 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid #e2e8f0;
+  padding: 0.75rem 0;
 }
 
-.memory-item:last-child {
-  border-bottom: none;
+.memory-item:not(:last-child) {
+  border-bottom: 1px solid #e9ecef;
 }
 
 .memory-item span {
-  color: #64748b;
+  color: #6c757d;
+  font-weight: 500;
 }
 
 .memory-item strong {
-  color: #1e293b;
-  font-family: 'Monaco', 'Menlo', monospace;
-}
-
-.status-success {
-  color: #059669;
-  font-weight: 600;
-}
-
-.status-error {
-  color: #dc2626;
-  font-weight: 600;
-}
-
-.result-section {
-  min-height: 100px;
-  margin: 1rem 0;
-}
-
-/* Spinner animation */
-.spinner {
-  animation: spin 1s linear infinite;
-  margin-right: 0.5rem;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-.fade-in {
-  animation: fadeIn 0.3s ease-in;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.notification {
-  background: #dbeafe;
-  border: 1px solid #3b82f6;
-  border-radius: 8px;
-  padding: 1rem;
-  margin: 1rem 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.notification button {
-  background: #3b82f6;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.logs-section {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 12px;
-  margin-bottom: 2rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.logs-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.logs-header h3 {
-  margin: 0;
-  color: #333;
-}
-
-.logs-container {
-  background: #1a1a1a;
-  color: #00ff00;
-  padding: 1rem;
-  border-radius: 8px;
-  max-height: 200px;
-  overflow-y: auto;
+  color: #2c3e50;
+  font-size: 1.1rem;
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 0.9rem;
 }
 
-.log-entry {
-  padding: 0.25rem 0;
-  border-bottom: 1px solid #333;
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  margin: 2rem 0;
+  justify-content: center;
 }
 
-.log-entry:last-child {
-  border-bottom: none;
+.action-buttons .btn {
+  min-width: 140px;
 }
 
 .info-section {
-  background: white;
-  padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-top: 2rem;
 }
 
 .info-section h3 {
-  margin-top: 0;
-  color: #333;
+  margin: 0 0 1rem 0;
+  color: #2c3e50;
+  font-size: 1.1rem;
 }
 
 .info-section ul {
   padding-left: 1.5rem;
-  margin-bottom: 1rem;
+  color: #555;
+  line-height: 1.6;
 }
 
 .info-section li {
   margin-bottom: 0.5rem;
-  line-height: 1.5;
-}
-
-.tip {
-  background: #f0f9ff;
-  border: 1px solid #bae6fd;
-  border-radius: 8px;
-  padding: 1rem;
-  color: #0369a1;
 }
 
 .error-fallback {
@@ -365,7 +226,7 @@ body {
 }
 
 .error-fallback h2 {
-  font-size: 2rem;
+  font-size: 1.8rem;
   margin-bottom: 1rem;
 }
 
@@ -380,29 +241,35 @@ body {
   padding: 1rem;
   border-radius: 4px;
   overflow-x: auto;
+  font-size: 0.9rem;
 }
 
 @media (max-width: 768px) {
-  .button-group {
-    grid-template-columns: 1fr;
+  .calculator-container {
+    padding: 1rem;
   }
-
+  
   .input-group {
     flex-direction: column;
-    align-items: stretch;
   }
-
-  .app-header h1 {
-    font-size: 2rem;
-  }
-
-  .dashboard {
-    padding: 0 1rem 1rem;
-  }
-
-  .logs-header {
+  
+  .action-buttons {
     flex-direction: column;
-    gap: 1rem;
+    align-items: center;
+  }
+  
+  .action-buttons .btn {
+    width: 100%;
+    max-width: 200px;
+  }
+  
+  .app-header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .memory-item {
+    flex-direction: column;
     align-items: flex-start;
+    gap: 0.5rem;
   }
 }

@@ -7,26 +7,14 @@ import './App.css';
 Sentry.init({
   dsn: import.meta.env.VITE_SENTRY_DSN || "",
   environment: "development",
-  integrations: [
-    new Sentry.BrowserTracing(),
-    new Sentry.Replay(),
-  ],
-  tracesSampleRate: 1.0,
-  replaysSessionSampleRate: 0.1,
-  replaysOnErrorSampleRate: 1.0,
   debug: true,
 });
 
 function MemoryCalculator() {
   const [lengthInput, setLengthInput] = useState('');
-  const [resultHtml, setResultHtml] = useState('Enter a value and click "Calculate" to see results.');
-  const [isLoading, setIsLoading] = useState(false);
-  const [logs, setLogs] = useState([]);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState('');
   const inputRef = useRef(null);
-
-  const addLog = (message) => {
-    setLogs(prev => [...prev, `${new Date().toLocaleTimeString()}: ${message}`]);
-  };
 
   const bytesForArrayLength = useCallback((length) => {
     return BigInt(length) * BigInt(8);
@@ -35,87 +23,56 @@ function MemoryCalculator() {
   const humanReadable = useCallback((bytesBigInt) => {
     const units = ["B", "KB", "MB", "GB", "TB", "PB"];
     let b = Number(bytesBigInt);
+    
+    if (b === 0) return "0 B";
+    
     let i = 0;
-    while (b >= 1024 && i + 1 < units.length) {
+    while (b >= 1024 && i < units.length - 1) {
       b /= 1024;
       i++;
     }
-    return b.toFixed(2) + " " + units[i];
+    
+    return b.toLocaleString(undefined, { maximumFractionDigits: 2 }) + " " + units[i];
   }, []);
 
-  const triggerUnhandledError = () => {
-    addLog('Triggering unhandled error...');
-    throw new Error('Unhandled runtime error from memory calculator!');
-  };
-
-  const triggerUnhandledPromise = () => {
-    addLog('Triggering unhandled promise rejection...');
-    Promise.reject(new Error('Unhandled promise rejection from memory calculator!'));
-  };
-
-  const handleCalculate = useCallback(async () => {
+  const handleCalculate = useCallback(() => {
     const input = lengthInput.trim();
-    setResultHtml("");
-    setIsLoading(true);
-    addLog(`Calculating memory for array length: ${input}`);
+    setResult(null);
+    setError('');
+
+    if (!input) {
+      setError('Please enter an array length');
+      return;
+    }
 
     try {
-      let length;
-      try {
-        length = BigInt(input);
-      } catch (e) {
-        Sentry.captureException(e, {
-          tags: { type: 'invalid_input' },
-          extra: { input }
-        });
-        setResultHtml(`<span class="status-error">❌ Invalid input. Must be a whole number. Error: ${e.message}</span>`);
-        addLog('Invalid input error captured by Sentry');
-        return;
+      // Validate input is a valid number
+      if (!/^-?\d+$/.test(input)) {
+        throw new Error('Invalid input. Must be a whole number.');
       }
 
-      if (length < 0) {
-        const error = new Error("Negative array length provided");
-        Sentry.captureException(error, {
-          tags: { type: 'negative_length' },
-          extra: { input, length: length.toString() }
-        });
-        setResultHtml(`<span class="status-error">❌ Length cannot be negative.</span>`);
-        addLog('Negative length error captured by Sentry');
-        return;
+      const length = BigInt(input);
+      
+      if (length < 0n) {
+        throw new Error('Array length cannot be negative');
       }
 
       if (length > BigInt(Number.MAX_SAFE_INTEGER)) {
-        addLog('Warning: Array length exceeds safe integer limit');
+        // This will trigger a RangeError for array creation
+        const arr = new Array(Number(length));
       }
 
-      const lenNum = Number(length);
       const bytes = bytesForArrayLength(length);
+      const lenNum = Number(length);
       
-      const successContent = `
-        <div class="memory-result">
-          <span class="status-success">✅ Successfully created new Array(${lenNum.toLocaleString()})</span>
-          <div class="memory-display">
-            <div class="memory-item">
-              <span>Estimated memory usage:</span>
-              <strong>${humanReadable(bytes)}</strong>
-            </div>
-            <div class="memory-item">
-              <span>Array length:</span>
-              <strong>${lenNum.toLocaleString()}</strong>
-            </div>
-            <div class="memory-item">
-              <span>Total bytes:</span>
-              <strong>${bytes.toString()} bytes</strong>
-            </div>
-            <div class="memory-item">
-              <span>Total bits:</span>
-              <strong>${(bytes * BigInt(8)).toString()} bits</strong>
-            </div>
-          </div>
-        </div>
-      `;
-      setResultHtml(successContent);
+      setResult({
+        length: lenNum,
+        bytes: bytes,
+        humanReadable: humanReadable(bytes),
+        bits: bytes * 8n
+      });
 
+      // Log to Sentry for demo purposes
       Sentry.captureMessage("Array memory calculation completed", {
         level: 'info',
         extra: {
@@ -124,20 +81,18 @@ function MemoryCalculator() {
           memoryReadable: humanReadable(bytes)
         }
       });
-      addLog(`Calculation completed for array length: ${lenNum}`);
 
-    } catch (error) {
-      console.error('Calculation error:', error);
-      Sentry.captureException(error, {
+    } catch (err) {
+      console.error('Calculation error:', err);
+      setError(err.message);
+      
+      // Capture error in Sentry
+      Sentry.captureException(err, {
         tags: { type: 'calculation_error' },
         extra: { input: lengthInput }
       });
-      setResultHtml(`<span class="status-error">❌ An unexpected error occurred. Please try again.</span>`);
-      addLog('Unexpected calculation error captured by Sentry');
-    } finally {
-      setIsLoading(false);
     }
-  }, [lengthInput, bytesForArrayLength, humanReadable, addLog]);
+  }, [lengthInput, bytesForArrayLength, humanReadable]);
 
   const handleKeyUp = useCallback((event) => {
     if (event.key === "Enter") {
@@ -145,172 +100,83 @@ function MemoryCalculator() {
     }
   }, [handleCalculate]);
 
-  const testSentryError = useCallback(() => {
-    try {
-      const testError = new Error('This is a test error to verify Sentry integration');
-      testError.name = 'SentryTestError';
-      
-      Sentry.withScope((scope) => {
-        scope.setTag('test_type', 'manual_test');
-        scope.setExtra('test_timestamp', new Date().toISOString());
-        scope.setExtra('user_action', 'clicked_test_button');
-        Sentry.captureException(testError);
-      });
-      
-      setResultHtml('<span class="status-success">✅ Test error sent to Sentry! Check your Sentry dashboard.</span>');
-      addLog('Manual test error sent to Sentry');
-    } catch (error) {
-      console.error('Failed to send test error to Sentry:', error);
-      setResultHtml('<span class="status-error">❌ Failed to send test error to Sentry.</span>');
-    }
-  }, [addLog]);
-
-  const testPerformanceTransaction = useCallback(() => {
-    const transaction = Sentry.startTransaction({
-      name: "Test Performance Transaction",
-      op: "test",
-    });
-
-    Sentry.getCurrentScope().setSpan(transaction);
-
-    setTimeout(() => {
-      transaction.finish();
-      setResultHtml('<span class="status-success">✅ Performance transaction sent to Sentry!</span>');
-      addLog('Performance transaction sent to Sentry');
-    }, 1000);
-  }, [addLog]);
-
   const clearResults = useCallback(() => {
-    setResultHtml('Enter a value and click "Calculate" to see results.');
+    setResult(null);
+    setError('');
     setLengthInput('');
     inputRef.current?.focus();
-    addLog('Results cleared');
   }, []);
 
-  const clearLogs = useCallback(() => {
-    setLogs([]);
-  }, []);
+  const triggerUnhandledError = () => {
+    // This will be caught by Sentry automatically
+    throw new Error('Unhandled runtime error from memory calculator!');
+  };
 
   return (
     <div className="app">
       <header className="app-header">
-        <h1>🧠 Memory Calculator + Sentry Demo</h1>
-        <p>Calculate array memory usage and test Sentry error tracking with unhandled exceptions</p>
-        <div className="env-info">
-          <strong>Environment:</strong> Development |
-          <strong> DSN:</strong> {import.meta.env.VITE_SENTRY_DSN ? 'Configured' : 'Not Configured'}
-        </div>
+        <h1>JavaScript Array Memory Calculator</h1>
+        <p>Estimate memory usage for JavaScript arrays</p>
       </header>
 
-      <div className="dashboard">
-        <div className="stats">
-          <div className="stat-card">
-            <h3>Status</h3>
-            <p className="status">
-              {import.meta.env.VITE_SENTRY_DSN ? 'Sentry Active' : 'Sentry Inactive (No DSN)'}
-            </p>
-          </div>
-          <div className="stat-card">
-            <h3>Activity Logs</h3>
-            <p className="counter">{logs.length}</p>
-          </div>
-        </div>
-
-        <div className="controls">
-          <h2>Memory Calculator</h2>
-          
+      <div className="calculator-container">
+        <div className="input-section">
+          <h2>Array Length:</h2>
           <div className="input-group">
             <input
               type="text"
-              placeholder="Enter array length (e.g., 1000000)"
+              placeholder="e.g., 1000000"
               value={lengthInput}
               onChange={(e) => setLengthInput(e.target.value)}
               onKeyUp={handleKeyUp}
-              disabled={isLoading}
               className="text-input"
               ref={inputRef}
             />
             <button
-              className="btn btn-primary"
+              className="btn btn-calculate"
               onClick={handleCalculate}
-              disabled={isLoading || !lengthInput.trim()}
             >
-              {isLoading ? 'Calculating...' : 'Calculate Memory'}
-            </button>
-          </div>
-
-          <div className="result-section">
-            <div dangerouslySetInnerHTML={{ __html: resultHtml }} />
-          </div>
-
-          <h2>Error Simulation</h2>
-          <div className="button-group">
-            <button
-              className="btn btn-danger"
-              onClick={triggerUnhandledError}
-            >
-              🔥 Trigger Unhandled Error
-            </button>
-
-            <button
-              className="btn btn-warning"
-              onClick={triggerUnhandledPromise}
-            >
-              🔄 Unhandled Promise
-            </button>
-
-            <button
-              className="btn btn-info"
-              onClick={testSentryError}
-            >
-              🧪 Test Sentry Error
-            </button>
-
-            <button
-              className="btn btn-success"
-              onClick={testPerformanceTransaction}
-            >
-              📊 Test Performance
-            </button>
-
-            <button
-              className="btn btn-secondary"
-              onClick={clearResults}
-            >
-              🧹 Clear Results
+              Calculate
             </button>
           </div>
         </div>
 
-        <div className="logs-section">
-          <div className="logs-header">
-            <h3>Activity Logs</h3>
-            <button onClick={clearLogs} className="btn btn-clear">Clear Logs</button>
+        {error && (
+          <div className="error-message">
+            ❌ {error}
           </div>
-          <div className="logs-container">
-            {logs.map((log, index) => (
-              <div key={index} className="log-entry">{log}</div>
-            ))}
+        )}
+
+        {result && (
+          <div className="result-section">
+            <div className="success-message">
+              ✅ Successfully created new Array({result.length.toLocaleString()})
+            </div>
+            <div className="memory-result">
+              <div className="memory-item">
+                <span>Estimated memory usage:</span>
+                <strong>{result.humanReadable}</strong>
+              </div>
+            </div>
           </div>
+        )}
+
+        <div className="action-buttons">
+          <button onClick={clearResults} className="btn btn-secondary">
+            Clear
+          </button>
+          <button onClick={triggerUnhandledError} className="btn btn-danger">
+            Trigger Unhandled Error
+          </button>
         </div>
 
         <div className="info-section">
-          <h3>Demo Highlights</h3>
+          <h3>About this calculator</h3>
           <ul>
-            <li><strong>Unhandled Errors:</strong> Click "Trigger Unhandled Error" to see how Sentry catches errors without try-catch</li>
-            <li><strong>Promise Rejections:</strong> Unhandled promises are automatically captured</li>
-            <li><strong>Memory Calculations:</strong> Real-world scenario with potential edge cases</li>
-            <li><strong>Error Context:</strong> Sentry captures user actions, input values, and environment data</li>
-            <li><strong>Performance Monitoring:</strong> Track calculation performance and user interactions</li>
+            <li>Estimates memory usage assuming each array element is a JavaScript Number (8 bytes)</li>
+            <li>Shows both bytes and bits for the estimated memory usage</li>
+            <li>Converts large values to human-readable format (KB, MB, GB, etc.)</li>
           </ul>
-          
-          <div className="tip">
-            <strong>For Demo:</strong> 
-            <br/>1. Show the app working normally
-            <br/>2. Trigger unhandled errors to demonstrate automatic capture
-            <br/>3. Show how Sentry provides context (user actions, inputs, stack traces)
-            <br/>4. Demonstrate the difference with/without DSN configuration
-          </div>
         </div>
       </div>
     </div>
@@ -337,7 +203,7 @@ class ErrorBoundary extends React.Component {
     if (this.state.hasError) {
       return (
         <div className="error-fallback">
-          <h2>🚨 Memory Calculator Crashed!</h2>
+          <h2>🚨 Application Crashed!</h2>
           <p>This error has been automatically reported to Sentry.</p>
           <details>
             <summary>Error Details</summary>
