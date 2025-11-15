@@ -21,7 +21,7 @@ function MemoryCalculator() {
   }, []);
 
   const humanReadable = useCallback((bytesBigInt) => {
-    const units = ["B", "KB", "MB", "GB", "TB", "PB"];
+    const units = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
     let b = Number(bytesBigInt);
     
     if (b === 0) return "0 B";
@@ -57,13 +57,12 @@ function MemoryCalculator() {
         throw new Error('Array length cannot be negative');
       }
 
-      if (length > BigInt(Number.MAX_SAFE_INTEGER)) {
-        // This will trigger a RangeError for array creation
-        const arr = new Array(Number(length));
-      }
-
-      const bytes = bytesForArrayLength(length);
+      // This is where the unhandled RangeError will occur for very large numbers
+      // We're intentionally NOT wrapping this in try-catch to demonstrate Sentry capturing unhandled errors
       const lenNum = Number(length);
+      const arr = new Array(lenNum); // This will throw RangeError for very large numbers
+      
+      const bytes = bytesForArrayLength(length);
       
       setResult({
         length: lenNum,
@@ -86,7 +85,7 @@ function MemoryCalculator() {
       console.error('Calculation error:', err);
       setError(err.message);
       
-      // Capture error in Sentry
+      // Capture handled errors in Sentry
       Sentry.captureException(err, {
         tags: { type: 'calculation_error' },
         extra: { input: lengthInput }
@@ -107,9 +106,17 @@ function MemoryCalculator() {
     inputRef.current?.focus();
   }, []);
 
+  // This function will trigger an unhandled error that Sentry will capture automatically
   const triggerUnhandledError = () => {
-    // This will be caught by Sentry automatically
+    // This error is not caught by any try-catch block - Sentry will capture it automatically
     throw new Error('Unhandled runtime error from memory calculator!');
+  };
+
+  // Test with a specific large number that causes RangeError
+  const testLargeNumberError = () => {
+    setLengthInput('1000000000000000000000000000000000000000000000000');
+    // Don't call handleCalculate immediately - let user click Calculate to see the natural error
+    inputRef.current?.focus();
   };
 
   return (
@@ -150,12 +157,20 @@ function MemoryCalculator() {
         {result && (
           <div className="result-section">
             <div className="success-message">
-              ✅ Successfully created new Array({result.length.toLocaleString()})
+              ✅ Successfully calculated memory for Array({result.length.toLocaleString()})
             </div>
             <div className="memory-result">
               <div className="memory-item">
                 <span>Estimated memory usage:</span>
                 <strong>{result.humanReadable}</strong>
+              </div>
+              <div className="memory-item">
+                <span>Total bytes:</span>
+                <strong>{result.bytes.toString()} bytes</strong>
+              </div>
+              <div className="memory-item">
+                <span>Total bits:</span>
+                <strong>{result.bits.toString()} bits</strong>
               </div>
             </div>
           </div>
@@ -164,6 +179,9 @@ function MemoryCalculator() {
         <div className="action-buttons">
           <button onClick={clearResults} className="btn btn-secondary">
             Clear
+          </button>
+          <button onClick={testLargeNumberError} className="btn btn-warning">
+            Test Large Number
           </button>
           <button onClick={triggerUnhandledError} className="btn btn-danger">
             Trigger Unhandled Error
@@ -176,6 +194,17 @@ function MemoryCalculator() {
             <li>Estimates memory usage assuming each array element is a JavaScript Number (8 bytes)</li>
             <li>Shows both bytes and bits for the estimated memory usage</li>
             <li>Converts large values to human-readable format (KB, MB, GB, etc.)</li>
+            <li><strong>Demo:</strong> Enter very large numbers (like 1e30) to trigger "Invalid array length" errors that are automatically captured by Sentry</li>
+          </ul>
+        </div>
+
+        <div className="sentry-demo-info">
+          <h3>Sentry Demo Features</h3>
+          <ul>
+            <li><strong>Unhandled Errors:</strong> "Invalid array length" RangeError is automatically captured</li>
+            <li><strong>Error Context:</strong> Sentry records the input value, stack trace, and user actions</li>
+            <li><strong>Real-time Monitoring:</strong> Errors appear in your Sentry dashboard immediately</li>
+            <li><strong>Error Boundaries:</strong> React errors are gracefully handled with recovery options</li>
           </ul>
         </div>
       </div>
@@ -187,7 +216,7 @@ function MemoryCalculator() {
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, errorInfo: null };
   }
 
   static getDerivedStateFromError(error) {
@@ -196,7 +225,15 @@ class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     console.error('Error caught by boundary:', error);
-    Sentry.captureException(error, { extra: errorInfo });
+    this.setState({ errorInfo });
+    
+    // Capture React render errors in Sentry
+    Sentry.captureException(error, { 
+      extra: { 
+        componentStack: errorInfo.componentStack,
+        errorBoundary: true
+      } 
+    });
   }
 
   render() {
@@ -208,6 +245,7 @@ class ErrorBoundary extends React.Component {
           <details>
             <summary>Error Details</summary>
             <pre>{this.state.error?.toString()}</pre>
+            <pre>Component Stack:\n{this.state.errorInfo?.componentStack}</pre>
           </details>
           <button
             onClick={() => window.location.reload()}
