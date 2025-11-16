@@ -110,7 +110,7 @@ function MemoryCalculator() {
     <div className="app">
       <header className="app-header">
         <h1>JavaScript Array Estimated Memory Usage Calculation</h1>
-        <p>Report Issue (Handled + Unhandled) To Sentry</p>
+        <p>Sentry: Capturing & Reporting (Handled + Unhandled) Issue</p>
         <div className="env-info">
           <strong>Sentry Status:</strong> {import.meta.env.VITE_SENTRY_DSN ? 'Active' : 'Not Configured'}
         </div>
