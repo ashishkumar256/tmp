@@ -42,12 +42,15 @@ function MemoryCalculator() {
     setResult(null);
     setError('');
 
+    let length;
+
+    // ✅ Handle validation errors (zero, negative, empty)
     try {
       if (!input) {
         throw new Error('Please enter an array length');
       }
 
-      const length = BigInt(input);
+      length = BigInt(input);
 
       if (length < 0n) {
         throw new Error('Array length cannot be negative');
@@ -57,39 +60,42 @@ function MemoryCalculator() {
         throw new Error('Array length cannot be zero');
       }
 
-      const lenNum = Number(length);
-      const arr = new Array(lenNum); // RangeError if too large
-
-      const bytes = bytesForArrayLength(length);
-
-      setResult({
-        length: lenNum,
-        bytes: bytes,
-        humanReadable: humanReadable(bytes),
-        bits: bytes * 8n
-      });
-
-      if (Sentry && Sentry.captureMessage) {
-        Sentry.captureMessage("Array memory calculation completed", {
-          level: 'info',
-          extra: {
-            arrayLength: lenNum,
-            memoryBytes: bytes.toString(),
-            memoryReadable: humanReadable(bytes)
-          }
-        });
-      }
-
     } catch (err) {
-      console.error('Calculation error:', err);
+      console.error('Validation error:', err);
       setError(err.message);
 
       if (Sentry && Sentry.captureException) {
         Sentry.captureException(err, {
-          tags: { type: 'calculation_error' },
+          tags: { type: 'validation_error' },
           extra: { input: lengthInput }
         });
       }
+
+      return;
+    }
+
+    // ❗ RangeError from this line is unhandled
+    const lenNum = Number(length);
+    const arr = new Array(lenNum);
+
+    const bytes = bytesForArrayLength(length);
+
+    setResult({
+      length: lenNum,
+      bytes: bytes,
+      humanReadable: humanReadable(bytes),
+      bits: bytes * 8n
+    });
+
+    if (Sentry && Sentry.captureMessage) {
+      Sentry.captureMessage("Array memory calculation completed", {
+        level: 'info',
+        extra: {
+          arrayLength: lenNum,
+          memoryBytes: bytes.toString(),
+          memoryReadable: humanReadable(bytes)
+        }
+      });
     }
   }, [lengthInput, bytesForArrayLength, humanReadable]);
 
