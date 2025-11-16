@@ -142,7 +142,7 @@ function MemoryCalculator() {
 
         {error && (
           <div className="error-message">
-            ❌ {error}
+            {error}
           </div>
         )}
 
