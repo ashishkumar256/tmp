@@ -25,15 +25,12 @@ function MemoryCalculator() {
   const humanReadable = useCallback((bytesBigInt) => {
     const units = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
     let b = Number(bytesBigInt);
-
     if (b === 0) return "0 B";
-
     let i = 0;
     while (b >= 1024 && i < units.length - 1) {
       b /= 1024;
       i++;
     }
-
     return b.toLocaleString(undefined, { maximumFractionDigits: 2 }) + " " + units[i];
   }, []);
 
@@ -41,45 +38,33 @@ function MemoryCalculator() {
     const input = lengthInput.trim();
     setResult(null);
     setError('');
-
     let length;
 
-    // ✅ Handle validation errors (zero, negative, empty)
+    // ✅ Handle validation errors (empty and zero)
     try {
       if (!input) {
         throw new Error('Please enter an array length');
       }
-
       length = BigInt(input);
-
-      if (length < 0n) {
-        throw new Error('Array length cannot be negative');
-      }
-
       if (length === 0n) {
         throw new Error('Array length cannot be zero');
       }
-
     } catch (err) {
       console.error('Validation error:', err);
       setError(err.message);
-
       if (Sentry && Sentry.captureException) {
         Sentry.captureException(err, {
           tags: { type: 'validation_error' },
           extra: { input: lengthInput }
         });
       }
-
       return;
     }
 
     // ❗ RangeError from this line is unhandled
     const lenNum = Number(length);
     const arr = new Array(lenNum);
-
     const bytes = bytesForArrayLength(length);
-
     setResult({
       length: lenNum,
       bytes: bytes,
@@ -112,22 +97,6 @@ function MemoryCalculator() {
     inputRef.current?.focus();
   }, []);
 
-  const triggerUnhandledError = () => {
-    throw new Error('Unhandled runtime error from memory calculator!');
-  };
-
-  const testLargeNumberError = () => {
-    setLengthInput('1000000000000000000000000000000000000000000000000');
-    setError('');
-    inputRef.current?.focus();
-  };
-
-  const testWorkingNumber = () => {
-    setLengthInput('1000000');
-    setError('');
-    inputRef.current?.focus();
-  };
-
   return (
     <div className="app">
       <header className="app-header">
@@ -137,7 +106,6 @@ function MemoryCalculator() {
           <strong>Sentry Status:</strong> {import.meta.env.VITE_SENTRY_DSN ? 'Active' : 'Not Configured'}
         </div>
       </header>
-
       <div className="calculator-container">
         <div className="input-section">
           <h2>Array Length:</h2>
@@ -162,13 +130,11 @@ function MemoryCalculator() {
             </button>
           </div>
         </div>
-
         {error && (
           <div className="error-message">
             ❌ {error}
           </div>
         )}
-
         {result && (
           <div className="result-section">
             <div className="success-message">
@@ -190,41 +156,27 @@ function MemoryCalculator() {
             </div>
           </div>
         )}
-
         <div className="action-buttons">
           <button onClick={clearResults} className="btn btn-secondary">
             Clear
           </button>
-          <button onClick={testWorkingNumber} className="btn btn-success">
-            Test Working Number
-          </button>
-          <button onClick={testLargeNumberError} className="btn btn-warning">
-            Test Large Number
-          </button>
-          <button onClick={triggerUnhandledError} className="btn btn-danger">
-            Trigger Unhandled Error
-          </button>
         </div>
-
         <div className="info-section">
-          <h3>About this calculator</h3>
+          <h3>About this Calculator & Sentry Demo</h3>
           <ul>
             <li>Estimates memory usage assuming each array element is a JavaScript Number (8 bytes)</li>
             <li>Shows both bytes and bits for the estimated memory usage</li>
             <li>Converts large values to human-readable format (KB, MB, GB, etc.)</li>
             <li><strong>Integer-only input:</strong> Only whole numbers are allowed</li>
-            <li><strong>Demo:</strong> Enter very large numbers to trigger "Invalid array length" errors captured by Sentry</li>
-          </ul>
-        </div>
-
-        <div className="sentry-demo-info">
-          <h3>Sentry Demo Features</h3>
-          <ul>
-            <li><strong>Handled Errors:</strong> Negative and zero inputs are caught and logged without crashing</li>
-            <li><strong>Unhandled Errors:</strong> Huge array lengths still trigger RangeError and crash</li>
-            <li><strong>Error Context:</strong> Sentry records the input value, stack trace, and user actions</li>
-            <li><strong>Real-time Monitoring:</strong> Errors appear in your Sentry dashboard immediately</li>
-            <li><strong>Error Boundaries:</strong> React errors are gracefully handled with recovery options</li>
+            <li><strong>Sentry Error Tracking:</strong> 
+              <ul>
+                <li>Handled Errors: Empty and zero inputs are caught and logged without crashing</li>
+                <li>Unhandled Errors: Very large array lengths trigger RangeError and crash the component</li>
+                <li>Error Context: Sentry records input values, stack traces, and user actions</li>
+                <li>Real-time Monitoring: Errors appear in your Sentry dashboard immediately</li>
+                <li>Error Boundaries: React errors are gracefully handled with recovery options</li>
+              </ul>
+            </li>
             <li><strong>Current Status:</strong> {import.meta.env.VITE_SENTRY_DSN ? 'Sentry Active' : 'Sentry Not Configured'}</li>
           </ul>
         </div>
