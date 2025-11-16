@@ -222,6 +222,7 @@ body {
   font-size: 1rem;
 }
 
+/* 1. Updated: Make success message a flex container to align text and result value */
 .success-message {
   background: #f0fdf4;
   border: 1px solid #bbf7d0;
@@ -231,20 +232,41 @@ body {
   color: #15803d;
   font-size: 0.8rem;
   font-weight: 500;
-  display: flex;
+  display: flex; /* Main change: use flexbox */
   align-items: center;
   gap: 0.5rem;
   box-shadow: var(--shadow);
   line-height: 1.4;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal; /* Allow message content to wrap */
 }
 
-.success-message strong {
+/* Container for the text part of the message */
+.success-message .message-content {
+  flex-grow: 1;
+}
+
+/* Container for the numerical result and unit */
+.success-message .result-value {
+  display: flex; /* Use flexbox to keep value and unit together */
+  align-items: baseline;
+  flex-shrink: 0; /* Prevent from shrinking */
+}
+
+/* Style for the numerical value */
+.success-message .value-only {
   color: #0f766e;
   font-weight: 600;
+  font-size: 1rem; /* Slightly larger text for the number */
 }
+
+/* Style for the unit to be right next to the number on the same line */
+.success-message .unit-only {
+  color: #0f766e;
+  font-weight: 500;
+  font-size: 0.85rem;
+  margin-left: 0.25rem;
+}
+
 
 .success-message::before {
   content: '✅';
@@ -259,6 +281,8 @@ body {
   margin: 1rem 0;
   box-shadow: var(--shadow-md);
   border: 1px solid var(--border);
+  display: flex; /* Make result section a flex container */
+  flex-direction: column;
 }
 
 /* Action Buttons - More compact */
@@ -273,10 +297,10 @@ body {
   min-width: 90px;
 }
 
-/* Clear button inside result section */
+/* 2. Updated: Clear button inside result section */
 .result-section .action-buttons {
   margin: 1rem 0 0 0;
-  justify-content: flex-start;
+  justify-content: flex-start; /* Align button to the left */
 }
 
 /* Info Section - Much more compact */
@@ -400,6 +424,12 @@ body {
   .result-section {
     padding: 1rem;
   }
+
+  /* Clear button inside result section on mobile */
+  .result-section .action-buttons {
+    margin: 1rem 0 0 0;
+    justify-content: flex-start;
+  }
 }
 
 @media (max-width: 480px) {
@@ -427,10 +457,19 @@ body {
     font-size: 0.75rem;
   }
 
-  /* Allow success message to wrap on very small screens */
+  /* Success message adjustment for tiny screens */
   .success-message {
-    white-space: normal;
-    line-height: 1.4;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+  }
+
+  .success-message::before {
+    margin-bottom: 0.5rem;
+  }
+
+  .success-message .result-value {
+    margin-top: 0.25rem;
   }
 }
 

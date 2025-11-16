@@ -25,13 +25,16 @@ function MemoryCalculator() {
   const humanReadable = useCallback((bytesBigInt) => {
     const units = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
     let b = Number(bytesBigInt);
-    if (b === 0) return "0 B";
+    if (b === 0) return { value: "0", unit: "B" }; // Changed to return object
     let i = 0;
     while (b >= 1024 && i < units.length - 1) {
       b /= 1024;
       i++;
     }
-    return b.toLocaleString(undefined, { maximumFractionDigits: 2 }) + " " + units[i];
+    return { 
+      value: b.toLocaleString(undefined, { maximumFractionDigits: 2 }), 
+      unit: units[i] 
+    }; // Changed to return object
   }, []);
 
   const processCalculate = useCallback(() => {
@@ -65,10 +68,16 @@ function MemoryCalculator() {
     const lenNum = Number(length);
     const arr = new Array(lenNum);
     const bytes = bytesForArrayLength(length);
+    
+    // Get human-readable object {value, unit}
+    const hr = humanReadable(bytes);
+
     setResult({
       length: lenNum,
       bytes: bytes,
-      humanReadable: humanReadable(bytes),
+      humanReadable: `${hr.value} ${hr.unit}`, // Store combined string for Sentry
+      hrValue: hr.value, // New: store value separately
+      hrUnit: hr.unit,   // New: store unit separately
       bits: bytes * 8n
     });
 
@@ -78,7 +87,7 @@ function MemoryCalculator() {
         extra: {
           arrayLength: lenNum,
           memoryBytes: bytes.toString(),
-          memoryReadable: humanReadable(bytes)
+          memoryReadable: `${hr.value} ${hr.unit}`
         }
       });
     }
@@ -137,13 +146,19 @@ function MemoryCalculator() {
           </div>
         )}
 
+        {/* Updated Result Section for inline unit and clear button inside */}
         {result && (
           <div className="result-section">
             <div className="success-message">
-              {/* Fixed: Keep the entire message on one line */}
-              Successfully calculated memory for Array({result.length.toLocaleString()}), estimated memory usage: <strong>{result.humanReadable}</strong>
+              <div className="message-content">
+                Successfully calculated memory for Array({result.length.toLocaleString()}), estimated memory usage: 
+              </div>
+              <div className="result-value">
+                <strong className="value-only">{result.hrValue}</strong>
+                <span className="unit-only">{result.hrUnit}</span>
+              </div>
             </div>
-            {/* Moved Clear button inside the result section */}
+            
             <div className="action-buttons">
               <button onClick={clearResults} className="btn btn-secondary">
                 Clear
@@ -152,7 +167,8 @@ function MemoryCalculator() {
           </div>
         )}
 
-        {/* Only show Clear button outside if there's no result */}
+        {/* Removed the Clear button from outside the result section */}
+        {/*
         {!result && (
           <div className="action-buttons">
             <button onClick={clearResults} className="btn btn-secondary">
@@ -160,6 +176,7 @@ function MemoryCalculator() {
             </button>
           </div>
         )}
+        */}
 
         <div className="info-section">
           <h3>About this Calculator & Sentry Demo</h3>
