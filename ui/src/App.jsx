@@ -141,8 +141,7 @@ function MemoryCalculator() {
         {result && (
           <div className="result-section">
             <div className="success-message">
-              ✅ Successfully calculated memory for Array({result.length.toLocaleString()}), 
-              estimated memory usage: <strong>{result.humanReadable}</strong>
+              Successfully calculated memory for Array({result.length.toLocaleString()}), estimated memory usage: <strong>{result.humanReadable}</strong>
             </div>
           </div>
         )}
