@@ -65,6 +65,7 @@ function MemoryCalculator() {
     const lenNum = Number(length);
     const arr = new Array(lenNum);
     const bytes = bytesForArrayLength(length);
+
     setResult({
       length: lenNum,
       bytes: bytes,
@@ -130,37 +131,28 @@ function MemoryCalculator() {
             </button>
           </div>
         </div>
+
         {error && (
           <div className="error-message">
             ❌ {error}
           </div>
         )}
+
         {result && (
           <div className="result-section">
             <div className="success-message">
-              ✅ Successfully calculated memory for Array({result.length.toLocaleString()})
-            </div>
-            <div className="memory-result">
-              <div className="memory-item">
-                <span>Estimated memory usage:</span>
-                <strong>{result.humanReadable}</strong>
-              </div>
-              <div className="memory-item">
-                <span>Total bytes:</span>
-                <strong>{result.bytes.toString()} bytes</strong>
-              </div>
-              <div className="memory-item">
-                <span>Total bits:</span>
-                <strong>{result.bits.toString()} bits</strong>
-              </div>
+              ✅ Successfully calculated memory for Array({result.length.toLocaleString()}), 
+              estimated memory usage: <strong>{result.humanReadable}</strong>
             </div>
           </div>
         )}
+
         <div className="action-buttons">
           <button onClick={clearResults} className="btn btn-secondary">
             Clear
           </button>
         </div>
+
         <div className="info-section">
           <h3>About this Calculator & Sentry Demo</h3>
           <ul>
@@ -168,7 +160,7 @@ function MemoryCalculator() {
             <li>Shows both bytes and bits for the estimated memory usage</li>
             <li>Converts large values to human-readable format (KB, MB, GB, etc.)</li>
             <li><strong>Integer-only input:</strong> Only whole numbers are allowed</li>
-            <li><strong>Sentry Error Tracking:</strong> 
+            <li><strong>Sentry Error Tracking:</strong>
               <ul>
                 <li>Handled Errors: Empty and zero inputs are caught and logged without crashing</li>
                 <li>Unhandled Errors: Very large array lengths trigger RangeError and crash the component</li>
