@@ -43,6 +43,7 @@ function MemoryCalculator() {
     setResult(null);
     setError('');
 
+    // Defensive guard: still relevant for Enter key
     if (!input) {
       setError('Please enter an array length');
       return;
@@ -50,19 +51,18 @@ function MemoryCalculator() {
 
     const length = BigInt(input);
 
+    // Throw exceptions for negative and zero → Sentry captures them
     if (length < 0n) {
-      setError('Array length cannot be negative');
-      return;
+      throw new Error('Array length cannot be negative');
     }
 
     if (length === 0n) {
-      setError('Array length cannot be zero');
-      return;
+      throw new Error('Array length cannot be zero');
     }
 
-    // ⚠️ No try/catch here — RangeError will be unhandled
+    // ⚠️ RangeError will remain unhandled for demo purposes
     const lenNum = Number(length);
-    const arr = new Array(lenNum); // RangeError if too large
+    const arr = new Array(lenNum);
 
     const bytes = bytesForArrayLength(length);
 
@@ -207,6 +207,7 @@ function MemoryCalculator() {
           <h3>Sentry Demo Features</h3>
           <ul>
             <li><strong>Unhandled Errors:</strong> "Invalid array length" RangeError is automatically captured</li>
+            <li><strong>Negative/Zero Errors:</strong> Now thrown as exceptions and captured by Sentry</li>
             <li><strong>Error Context:</strong> Sentry records the input value, stack trace, and user actions</li>
             <li><strong>Real-time Monitoring:</strong> Errors appear in your Sentry dashboard immediately</li>
             <li><strong>Error Boundaries:</strong> React errors are gracefully handled with recovery options</li>
