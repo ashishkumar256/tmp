@@ -236,6 +236,9 @@ body {
   gap: 0.5rem;
   box-shadow: var(--shadow);
   line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .success-message strong {
@@ -268,6 +271,12 @@ body {
 
 .action-buttons .btn {
   min-width: 90px;
+}
+
+/* Clear button inside result section */
+.result-section .action-buttons {
+  margin: 1rem 0 0 0;
+  justify-content: flex-start;
 }
 
 /* Info Section - Much more compact */
@@ -325,93 +334,6 @@ body {
   outline-offset: 2px;
 }
 
-/* Responsive Design - Optimized for no scrolling */
-@media (max-width: 768px) {
-  .calculator-container {
-    max-width: 100%;
-    padding: 0.75rem 1rem;
-  }
-
-  .app-header {
-    padding: 0.75rem 1rem;
-  }
-
-  .app-header h1 {
-    font-size: 1.1rem;
-  }
-
-  .app-header p {
-    font-size: 0.85rem;
-  }
-
-  .input-group {
-    flex-direction: column;
-  }
-
-  .action-buttons {
-    flex-direction: column;
-    align-items: center;
-    margin: 1rem 0;
-  }
-
-  .action-buttons .btn {
-    width: 100%;
-    max-width: 180px;
-  }
-
-  .info-section {
-    padding: 1.25rem;
-    margin-top: 1rem;
-  }
-
-  .input-section,
-  .result-section {
-    padding: 1rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .calculator-container {
-    padding: 0.5rem 0.75rem;
-  }
-
-  .app-header {
-    padding: 0.5rem 0.75rem;
-  }
-
-  .btn {
-    padding: 0.625rem 1rem;
-  }
-
-  .text-input {
-    padding: 0.625rem;
-  }
-  
-  .info-section {
-    padding: 1rem;
-  }
-  
-  .info-section ul {
-    font-size: 0.75rem;
-  }
-}
-
-/* Ensure no vertical scrolling on most screens */
-@media (max-height: 800px) {
-  .calculator-container {
-    padding: 0.5rem 1.5rem;
-  }
-  
-  .app-header {
-    padding: 0.75rem 1.5rem;
-  }
-  
-  .info-section {
-    margin-top: 1rem;
-    padding: 1rem;
-  }
-}
-
 /* Loading State */
 .calculating {
   position: relative;
@@ -433,4 +355,97 @@ body {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* Responsive Design - Optimized for no scrolling */
+@media (max-width: 768px) {
+  .calculator-container {
+    max-width: 100%;
+    padding: 0.75rem 1rem;
+  }
+  
+  .app-header {
+    padding: 0.75rem 1rem;
+  }
+  
+  .app-header h1 {
+    font-size: 1.1rem;
+  }
+  
+  .app-header p {
+    font-size: 0.85rem;
+  }
+  
+  .input-group {
+    flex-direction: column;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+    align-items: center;
+    margin: 1rem 0;
+  }
+  
+  .action-buttons .btn {
+    width: 100%;
+    max-width: 180px;
+  }
+  
+  .info-section {
+    padding: 1.25rem;
+    margin-top: 1rem;
+  }
+  
+  .input-section,
+  .result-section {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .calculator-container {
+    padding: 0.5rem 0.75rem;
+  }
+  
+  .app-header {
+    padding: 0.5rem 0.75rem;
+  }
+  
+  .btn {
+    padding: 0.625rem 1rem;
+  }
+  
+  .text-input {
+    padding: 0.625rem;
+  }
+
+  .info-section {
+    padding: 1rem;
+  }
+
+  .info-section ul {
+    font-size: 0.75rem;
+  }
+
+  /* Allow success message to wrap on very small screens */
+  .success-message {
+    white-space: normal;
+    line-height: 1.4;
+  }
+}
+
+/* Ensure no vertical scrolling on most screens */
+@media (max-height: 800px) {
+  .calculator-container {
+    padding: 0.5rem 1.5rem;
+  }
+
+  .app-header {
+    padding: 0.75rem 1.5rem;
+  }
+
+  .info-section {
+    margin-top: 1rem;
+    padding: 1rem;
+  }
 }

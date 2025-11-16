@@ -65,7 +65,6 @@ function MemoryCalculator() {
     const lenNum = Number(length);
     const arr = new Array(lenNum);
     const bytes = bytesForArrayLength(length);
-
     setResult({
       length: lenNum,
       bytes: bytes,
@@ -141,16 +140,26 @@ function MemoryCalculator() {
         {result && (
           <div className="result-section">
             <div className="success-message">
+              {/* Fixed: Keep the entire message on one line */}
               Successfully calculated memory for Array({result.length.toLocaleString()}), estimated memory usage: <strong>{result.humanReadable}</strong>
+            </div>
+            {/* Moved Clear button inside the result section */}
+            <div className="action-buttons">
+              <button onClick={clearResults} className="btn btn-secondary">
+                Clear
+              </button>
             </div>
           </div>
         )}
 
-        <div className="action-buttons">
-          <button onClick={clearResults} className="btn btn-secondary">
-            Clear
-          </button>
-        </div>
+        {/* Only show Clear button outside if there's no result */}
+        {!result && (
+          <div className="action-buttons">
+            <button onClick={clearResults} className="btn btn-secondary">
+              Clear
+            </button>
+          </div>
+        )}
 
         <div className="info-section">
           <h3>About this Calculator & Sentry Demo</h3>
