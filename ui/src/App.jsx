@@ -34,7 +34,7 @@ function MemoryCalculator() {
     return b.toLocaleString(undefined, { maximumFractionDigits: 2 }) + " " + units[i];
   }, []);
 
-  const handleCalculate = useCallback(() => {
+  const processCalculate = useCallback(() => {
     const input = lengthInput.trim();
     setResult(null);
     setError('');
@@ -86,9 +86,9 @@ function MemoryCalculator() {
 
   const handleKeyUp = useCallback((event) => {
     if (event.key === "Enter") {
-      handleCalculate();
+      processCalculate();
     }
-  }, [handleCalculate]);
+  }, [processCalculate]);
 
   const clearResults = useCallback(() => {
     setResult(null);
@@ -123,7 +123,7 @@ function MemoryCalculator() {
             />
             <button
               className="btn btn-calculate"
-              onClick={handleCalculate}
+              onClick={processCalculate}
               disabled={!lengthInput.trim()}
             >
               Calculate
