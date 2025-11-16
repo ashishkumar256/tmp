@@ -10,7 +10,6 @@ function MemoryCalculator() {
   const [error, setError] = useState('');
   const inputRef = useRef(null);
 
-  // Only allow numbers (integers) in input
   const handleInputChange = useCallback((e) => {
     const value = e.target.value;
     if (value === '' || /^\d+$/.test(value)) {
@@ -43,45 +42,54 @@ function MemoryCalculator() {
     setResult(null);
     setError('');
 
-    // Defensive guard: still relevant for Enter key
-    if (!input) {
-      setError('Please enter an array length');
-      return;
-    }
+    try {
+      if (!input) {
+        throw new Error('Please enter an array length');
+      }
 
-    const length = BigInt(input);
+      const length = BigInt(input);
 
-    // Throw exceptions for negative and zero → Sentry captures them
-    if (length < 0n) {
-      throw new Error('Array length cannot be negative');
-    }
+      if (length < 0n) {
+        throw new Error('Array length cannot be negative');
+      }
 
-    if (length === 0n) {
-      throw new Error('Array length cannot be zero');
-    }
+      if (length === 0n) {
+        throw new Error('Array length cannot be zero');
+      }
 
-    // ⚠️ RangeError will remain unhandled for demo purposes
-    const lenNum = Number(length);
-    const arr = new Array(lenNum);
+      const lenNum = Number(length);
+      const arr = new Array(lenNum); // RangeError if too large
 
-    const bytes = bytesForArrayLength(length);
+      const bytes = bytesForArrayLength(length);
 
-    setResult({
-      length: lenNum,
-      bytes: bytes,
-      humanReadable: humanReadable(bytes),
-      bits: bytes * 8n
-    });
-
-    if (Sentry && Sentry.captureMessage) {
-      Sentry.captureMessage("Array memory calculation completed", {
-        level: 'info',
-        extra: {
-          arrayLength: lenNum,
-          memoryBytes: bytes.toString(),
-          memoryReadable: humanReadable(bytes)
-        }
+      setResult({
+        length: lenNum,
+        bytes: bytes,
+        humanReadable: humanReadable(bytes),
+        bits: bytes * 8n
       });
+
+      if (Sentry && Sentry.captureMessage) {
+        Sentry.captureMessage("Array memory calculation completed", {
+          level: 'info',
+          extra: {
+            arrayLength: lenNum,
+            memoryBytes: bytes.toString(),
+            memoryReadable: humanReadable(bytes)
+          }
+        });
+      }
+
+    } catch (err) {
+      console.error('Calculation error:', err);
+      setError(err.message);
+
+      if (Sentry && Sentry.captureException) {
+        Sentry.captureException(err, {
+          tags: { type: 'calculation_error' },
+          extra: { input: lengthInput }
+        });
+      }
     }
   }, [lengthInput, bytesForArrayLength, humanReadable]);
 
@@ -206,8 +214,8 @@ function MemoryCalculator() {
         <div className="sentry-demo-info">
           <h3>Sentry Demo Features</h3>
           <ul>
-            <li><strong>Unhandled Errors:</strong> "Invalid array length" RangeError is automatically captured</li>
-            <li><strong>Negative/Zero Errors:</strong> Now thrown as exceptions and captured by Sentry</li>
+            <li><strong>Handled Errors:</strong> Negative and zero inputs are caught and logged without crashing</li>
+            <li><strong>Unhandled Errors:</strong> Huge array lengths still trigger RangeError and crash</li>
             <li><strong>Error Context:</strong> Sentry records the input value, stack trace, and user actions</li>
             <li><strong>Real-time Monitoring:</strong> Errors appear in your Sentry dashboard immediately</li>
             <li><strong>Error Boundaries:</strong> React errors are gracefully handled with recovery options</li>
