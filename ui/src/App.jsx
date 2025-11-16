@@ -13,7 +13,6 @@ function MemoryCalculator() {
   // Only allow numbers (integers) in input
   const handleInputChange = useCallback((e) => {
     const value = e.target.value;
-    // Only allow digits (no decimals, no negative signs, no letters)
     if (value === '' || /^\d+$/.test(value)) {
       setLengthInput(value);
       setError('');
@@ -27,15 +26,15 @@ function MemoryCalculator() {
   const humanReadable = useCallback((bytesBigInt) => {
     const units = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
     let b = Number(bytesBigInt);
-    
+
     if (b === 0) return "0 B";
-    
+
     let i = 0;
     while (b >= 1024 && i < units.length - 1) {
       b /= 1024;
       i++;
     }
-    
+
     return b.toLocaleString(undefined, { maximumFractionDigits: 2 }) + " " + units[i];
   }, []);
 
@@ -49,53 +48,40 @@ function MemoryCalculator() {
       return;
     }
 
-    try {
-      const length = BigInt(input);
-      
-      if (length < 0n) {
-        throw new Error('Array length cannot be negative');
-      }
+    const length = BigInt(input);
 
-      if (length === 0n) {
-        throw new Error('Array length cannot be zero');
-      }
+    if (length < 0n) {
+      setError('Array length cannot be negative');
+      return;
+    }
 
-      // This is where the unhandled RangeError will occur for very large numbers
-      const lenNum = Number(length);
-      const arr = new Array(lenNum); // This will throw RangeError for very large numbers
-      
-      const bytes = bytesForArrayLength(length);
-      
-      setResult({
-        length: lenNum,
-        bytes: bytes,
-        humanReadable: humanReadable(bytes),
-        bits: bytes * 8n
+    if (length === 0n) {
+      setError('Array length cannot be zero');
+      return;
+    }
+
+    // ⚠️ No try/catch here — RangeError will be unhandled
+    const lenNum = Number(length);
+    const arr = new Array(lenNum); // RangeError if too large
+
+    const bytes = bytesForArrayLength(length);
+
+    setResult({
+      length: lenNum,
+      bytes: bytes,
+      humanReadable: humanReadable(bytes),
+      bits: bytes * 8n
+    });
+
+    if (Sentry && Sentry.captureMessage) {
+      Sentry.captureMessage("Array memory calculation completed", {
+        level: 'info',
+        extra: {
+          arrayLength: lenNum,
+          memoryBytes: bytes.toString(),
+          memoryReadable: humanReadable(bytes)
+        }
       });
-
-      // Log to Sentry for demo purposes - only if Sentry is available
-      if (Sentry && Sentry.captureMessage) {
-        Sentry.captureMessage("Array memory calculation completed", {
-          level: 'info',
-          extra: {
-            arrayLength: lenNum,
-            memoryBytes: bytes.toString(),
-            memoryReadable: humanReadable(bytes)
-          }
-        });
-      }
-
-    } catch (err) {
-      console.error('Calculation error:', err);
-      setError(err.message);
-      
-      // Capture handled errors in Sentry - only if Sentry is available
-      if (Sentry && Sentry.captureException) {
-        Sentry.captureException(err, {
-          tags: { type: 'calculation_error' },
-          extra: { input: lengthInput }
-        });
-      }
     }
   }, [lengthInput, bytesForArrayLength, humanReadable]);
 
@@ -112,20 +98,16 @@ function MemoryCalculator() {
     inputRef.current?.focus();
   }, []);
 
-  // This function will trigger an unhandled error that Sentry will capture automatically
   const triggerUnhandledError = () => {
-    // This error is not caught by any try-catch block - Sentry will capture it automatically
     throw new Error('Unhandled runtime error from memory calculator!');
   };
 
-  // Test with a specific large number that causes RangeError
   const testLargeNumberError = () => {
     setLengthInput('1000000000000000000000000000000000000000000000000');
     setError('');
     inputRef.current?.focus();
   };
 
-  // Test with a reasonable number that works
   const testWorkingNumber = () => {
     setLengthInput('1000000');
     setError('');
@@ -236,7 +218,6 @@ function MemoryCalculator() {
   );
 }
 
-// Main App component with Error Boundary
 function App() {
   return (
     <ErrorBoundary>
@@ -245,7 +226,6 @@ function App() {
   );
 }
 
-// Render the app directly
 const rootElement = document.getElementById('root');
 if (rootElement) {
   const root = ReactDOM.createRoot(rootElement);
