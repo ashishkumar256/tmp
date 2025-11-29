@@ -14,8 +14,8 @@ export default defineConfig({
     allowedHosts: true,
     cors: true,
     hmr: {
-      host: 'localhost',
-      protocol: 'ws'
+      // host: 'localhost',
+      protocol: 'wss'
     }
   },
   preview: {
