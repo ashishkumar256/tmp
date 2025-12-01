@@ -11,7 +11,7 @@ services:
     ports:
       - "80:3000"
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
       - VITE_SENTRY_DSN=${VITE_SENTRY_DSN:-}
       - VITE_RELEASE_NAME=${RELEASE_NAME:-1.0.0}
       - CHOKIDAR_USEPOLLING=true
