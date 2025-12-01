@@ -30,7 +30,7 @@ const dedupeEventProcessor = (event) => {
   const shouldReport = shouldReportError();
   
   if (!shouldReport) {
-    console.log(`[Sentry Dedupe] Skipping error #${getErrorCount()} - Next report at #${Math.ceil(getErrorCount() / 10) * 10}`);
+    console.log(`[Sentry Dedupe] Skipping error #${getErrorCount()} - Next report at #${Math.ceil(getErrorCount() / 10) * 10 + 1}`);
     
     // Return null to drop the event
     return null;
@@ -49,13 +49,15 @@ const dedupeEventProcessor = (event) => {
   return event;
 };
 
-// Custom integration for deduplication
-const createDedupeIntegration = () => ({
-  name: 'CustomDedupe',
-  setup(client) {
-    client.addEventProcessor(dedupeEventProcessor);
+// Custom integration for deduplication with proper Sentry integration structure
+class CustomDedupeIntegration {
+  static id = 'CustomDedupe';
+  name = 'CustomDedupe';
+
+  setupOnce(addGlobalEventProcessor, getCurrentHub) {
+    addGlobalEventProcessor(dedupeEventProcessor);
   }
-});
+}
 
 // Initialize Sentry
 const initSentry = () => {
@@ -70,16 +72,16 @@ const initSentry = () => {
 
     // Check if custom dedupe strategy is enabled
     if (import.meta.env.VITE_DEDUPE_STRATEGY === 'custom') {
-      // Disable default integrations and manually add all except dedupe
+      // Create custom integrations array
+      config.integrations = [
+        new Sentry.BrowserTracing(),
+        new Sentry.Replay(),
+        new Sentry.BrowserProfilingIntegration(),
+        new CustomDedupeIntegration()
+      ];
+      
+      // Disable default integrations
       config.defaultIntegrations = false;
-      config.integrations = (integrations) => {
-        const filtered = integrations.filter(integration =>
-          integration.name !== 'Dedupe'
-        );
-        // Add our custom deduplication integration
-        filtered.push(createDedupeIntegration());
-        return filtered;
-      };
       
       console.log('[Sentry] Custom deduplication strategy enabled');
       console.log('[Sentry] Errors will be reported at: 1st, 10th, 20th, 30th... (resets daily)');
@@ -101,18 +103,6 @@ const initSentry = () => {
 
 // Initialize immediately
 initSentry();
-
-// Export helper functions for testing
-export const testDedupe = {
-  getDailyKey,
-  getErrorCount,
-  shouldReportError,
-  resetCount: () => {
-    const key = getDailyKey();
-    localStorage.removeItem(key);
-    console.log(`[Sentry Test] Reset count for ${key}`);
-  }
-};
 
 export { Sentry };
 export default Sentry;
