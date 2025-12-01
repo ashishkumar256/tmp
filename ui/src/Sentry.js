@@ -1,17 +1,37 @@
 import * as Sentry from '@sentry/react';
 
+// Check if this is an error event (not transaction, replay, etc.)
+const isErrorEvent = (event) => {
+  // Error events have exception values
+  if (event.exception?.values?.length > 0) {
+    return true;
+  }
+  
+  // Message events are also errors/warnings/info
+  if (event.message) {
+    return true;
+  }
+  
+  // Transactions, replays, outcomes, etc. should not be deduplicated
+  return false;
+};
+
 // Generate a fingerprint for an error
 const getErrorFingerprint = (event) => {
-  // Use error message and stack trace to create a fingerprint
+  // For error events with exception
   const exception = event.exception?.values?.[0];
-  if (!exception) return 'unknown';
+  if (exception) {
+    const message = exception.value || '';
+    const type = exception.type || '';
+    return `${type}:${message}`.toLowerCase().replace(/\s+/g, '_');
+  }
   
-  const message = exception.value || '';
-  const type = exception.type || '';
+  // For message events
+  if (event.message) {
+    return `message:${event.message}`.toLowerCase().replace(/\s+/g, '_');
+  }
   
-  // Create a simple fingerprint from message and type
-  // For more accurate deduplication, you could include stack trace
-  return `${type}:${message}`.toLowerCase().replace(/\s+/g, '_');
+  return 'unknown';
 };
 
 // Storage for deduplication tracking
@@ -42,22 +62,34 @@ const shouldReportError = (fingerprint) => {
 
 // Custom event processor for deduplication
 const dedupeEventProcessor = (event) => {
+  // Skip non-error events (transactions, replays, outcomes, etc.)
+  if (!isErrorEvent(event)) {
+    console.log('[Sentry Dedupe] Skipping non-error event (transaction/replay/outcome)');
+    return event; // Allow through without deduplication
+  }
+  
   // Get fingerprint for this specific error
   const fingerprint = getErrorFingerprint(event);
+  
+  // Skip if fingerprint is 'unknown' (shouldn't happen for real errors)
+  if (fingerprint === 'unknown') {
+    console.warn('[Sentry Dedupe] Unknown error type detected, allowing through');
+    return event;
+  }
   
   const shouldReport = shouldReportError(fingerprint);
   
   if (!shouldReport) {
     const currentCount = getErrorCount(fingerprint);
     const nextReportAt = Math.floor((currentCount - 1) / 10) * 10 + 11;
-    console.log(`[Sentry Dedupe] Skipping ${fingerprint} error #${currentCount} - Next report at #${nextReportAt}`);
+    console.log(`[Sentry Dedupe] Skipping "${fingerprint}" error #${currentCount} - Next report at #${nextReportAt}`);
     
     // Return null to drop the event
     return null;
   }
   
   const currentCount = getErrorCount(fingerprint);
-  console.log(`[Sentry Dedupe] Reporting ${fingerprint} error #${currentCount} of the day`);
+  console.log(`[Sentry Dedupe] Reporting "${fingerprint}" error #${currentCount} of the day`);
   
   // Add deduplication metadata to the event
   event.extra = event.extra || {};
@@ -91,15 +123,21 @@ const initSentry = () => {
       debug: true,
       tracesSampleRate: 1.0,
       release: "memory@1.0.0",
+      // Disable automatic performance monitoring to reduce noise
+      integrations: function(integrations) {
+        // Filter out performance monitoring integrations if not needed
+        return integrations.filter(integration => 
+          integration.name !== 'BrowserTracing' && 
+          integration.name !== 'BrowserProfilingIntegration' &&
+          integration.name !== 'Replay'
+        );
+      }
     };
 
     // Check if custom dedupe strategy is enabled
     if (import.meta.env.VITE_DEDUPE_STRATEGY === 'custom') {
-      // Create custom integrations array
+      // Add only our custom dedupe integration
       config.integrations = [
-        new Sentry.BrowserTracing(),
-        new Sentry.Replay(),
-        new Sentry.BrowserProfilingIntegration(),
         new CustomDedupeIntegration()
       ];
 
