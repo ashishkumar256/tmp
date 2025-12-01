@@ -122,7 +122,7 @@ const initSentry = () => {
       environment: "development",
       debug: true,
       tracesSampleRate: 1.0,
-      release: "memory@1.0.0",
+      release: import.meta.env.VITE_RELEASE_NAME || import.meta.env.npm_package_version,
       // Disable automatic performance monitoring to reduce noise
       integrations: function(integrations) {
         // Filter out performance monitoring integrations if not needed
