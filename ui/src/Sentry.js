@@ -21,8 +21,7 @@ const incrementErrorCount = () => {
 
 const shouldReportError = () => {
   const count = incrementErrorCount();
-  // Report 1st, 10th, 20th, 30th... errors (every 10th error)
-  return count === 1 || count % 10 === 0;
+  return count === 1 || (count - 1) % 10 === 0;
 };
 
 // Custom event processor for deduplication
@@ -30,7 +29,7 @@ const dedupeEventProcessor = (event) => {
   const shouldReport = shouldReportError();
   
   if (!shouldReport) {
-    console.log(`[Sentry Dedupe] Skipping error #${getErrorCount()} - Next report at #${Math.ceil(getErrorCount() / 10) * 10 + 1}`);
+    console.log(`[Sentry Dedupe] Skipping error #${getErrorCount()} - Next report at #${Math.floor((getErrorCount() - 1) / 10) * 10 + 11}`);
     
     // Return null to drop the event
     return null;
@@ -43,7 +42,7 @@ const dedupeEventProcessor = (event) => {
   event.extra.deduplication = {
     day: getDailyKey(),
     count: getErrorCount(),
-    nextReportAt: Math.ceil(getErrorCount() / 10) * 10 + 1
+    nextReportAt: Math.floor((getErrorCount() - 1) / 10) * 10 + 11
   };
   
   return event;
@@ -79,12 +78,12 @@ const initSentry = () => {
         new Sentry.BrowserProfilingIntegration(),
         new CustomDedupeIntegration()
       ];
-      
+
       // Disable default integrations
       config.defaultIntegrations = false;
-      
+
       console.log('[Sentry] Custom deduplication strategy enabled');
-      console.log('[Sentry] Errors will be reported at: 1st, 10th, 20th, 30th... (resets daily)');
+      console.log('[Sentry] Errors will be reported at: 1st, 11th, 21st, 31st... (resets daily)');
     } else {
       // Use default integrations (including dedupe)
       config.integrations = Sentry.defaultIntegrations;
