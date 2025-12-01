@@ -1,37 +1,38 @@
 import * as Sentry from '@sentry/react';
 
+// Initialize Sentry
 const initSentry = () => {
-  const disableDefaultDedupe = import.meta.env.VITE_DEDUPE_STRATEGY === 'custom';
-
   if (import.meta.env.VITE_SENTRY_DSN) {
-    console.log('Sentry initialized with DSN');
-    let integrationsToUse;
-
-    if (disableDefaultDedupe) {
-      integrationsToUse = Sentry.defaultIntegrations.filter(integration => {
-        console.log('Sentry: Default Dedupe disabled. Custom logic can be enabled.');
-        return integration.name !== 'Dedupe';
-      });
-    } else {
-      integrationsToUse = Sentry.defaultIntegrations;
-      console.log('Sentry: Default Dedupe enabled.');
-    }
-
-    Sentry.init({
+    const config = {
       dsn: import.meta.env.VITE_SENTRY_DSN,
       environment: "development",
       debug: true,
-      integrations: integrationsToUse,
       tracesSampleRate: 1.0,
-      release: 'memory@1.0.0-dev', 
-    });
+    };
     
-
+    // Check if custom dedupe strategy is enabled
+    if (import.meta.env.VITE_DEDUPE_STRATEGY === 'custom') {
+      // Disable default integrations and manually add all except dedupe
+      config.defaultIntegrations = false;
+      config.integrations = (integrations) => {
+        return integrations.filter(integration => 
+          integration.name !== 'Dedupe'
+        );
+      };
+    } else {
+      // Use default integrations (including dedupe)
+      config.integrations = Sentry.defaultIntegrations;
+    }
+    
+    Sentry.init(config);
+    config.log("config:", config)
+    console.log('Sentry initialized with DSN');
   } else {
     console.log('Sentry not initialized - no DSN provided');
   }
 };
 
+// Initialize immediately
 initSentry();
 
 export { Sentry };
