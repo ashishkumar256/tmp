@@ -25,7 +25,6 @@ const initSentry = () => {
     }
     
     Sentry.init(config);
-    config.log("config:", config)
     console.log('Sentry initialized with DSN');
   } else {
     console.log('Sentry not initialized - no DSN provided');
