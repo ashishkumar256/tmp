@@ -8,6 +8,7 @@ const initSentry = () => {
       environment: "development",
       debug: true,
       tracesSampleRate: 1.0,
+      release: "memory@1.0.0",
     };
     
     // Check if custom dedupe strategy is enabled
