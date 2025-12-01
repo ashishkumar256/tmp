@@ -25,16 +25,16 @@ function MemoryCalculator() {
   const humanReadable = useCallback((bytesBigInt) => {
     const units = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
     let b = Number(bytesBigInt);
-    if (b === 0) return { value: "0", unit: "B" }; // Changed to return object
+    if (b === 0) return { value: "0", unit: "B" };
     let i = 0;
     while (b >= 1024 && i < units.length - 1) {
       b /= 1024;
       i++;
     }
-    return { 
-      value: b.toLocaleString(undefined, { maximumFractionDigits: 2 }), 
-      unit: units[i] 
-    }; // Changed to return object
+    return {
+      value: b.toLocaleString(undefined, { maximumFractionDigits: 2 }),
+      unit: units[i]
+    };
   }, []);
 
   const processCalculate = useCallback(() => {
@@ -68,16 +68,15 @@ function MemoryCalculator() {
     const lenNum = Number(length);
     const arr = new Array(lenNum);
     const bytes = bytesForArrayLength(length);
-    
+
     // Get human-readable object {value, unit}
     const hr = humanReadable(bytes);
-
     setResult({
       length: lenNum,
       bytes: bytes,
-      humanReadable: `${hr.value} ${hr.unit}`, // Store combined string for Sentry
-      hrValue: hr.value, // New: store value separately
-      hrUnit: hr.unit,   // New: store unit separately
+      humanReadable: `${hr.value} ${hr.unit}`,
+      hrValue: hr.value,
+      hrUnit: hr.unit,
       bits: bytes * 8n
     });
 
@@ -139,45 +138,30 @@ function MemoryCalculator() {
             </button>
           </div>
         </div>
-
         {error && (
           <div className="error-message">
             {error}
           </div>
         )}
-
-        {/* Updated Result Section for inline unit and clear button inside */}
         {result && (
           <div className="result-section">
             <div className="success-message">
               <div className="message-content">
-                Successfully calculated memory for Array({result.length.toLocaleString()}), estimated memory usage: 
+                Successfully calculated memory for Array({result.length.toLocaleString()}), estimated memory usage:
               </div>
               <div className="result-value">
                 <strong className="value-only">{result.hrValue}</strong>
                 <span className="unit-only">{result.hrUnit}</span>
               </div>
             </div>
-            
+
             <div className="action-buttons">
               <button onClick={clearResults} className="btn btn-secondary">
                 Clear
               </button>
             </div>
           </div>
-        )}
-
-        {/* Removed the Clear button from outside the result section */}
-        {/*
-        {!result && (
-          <div className="action-buttons">
-            <button onClick={clearResults} className="btn btn-secondary">
-              Clear
-            </button>
-          </div>
-        )}
-        */}
-
+        )}        
         <div className="info-section">
           <h3>About this Calculator & Sentry Demo</h3>
           <ul>
@@ -192,6 +176,7 @@ function MemoryCalculator() {
                 <li>Error Context: Sentry records input values, stack traces, and user actions</li>
                 <li>Real-time Monitoring: Errors appear in your Sentry dashboard immediately</li>
                 <li>Error Boundaries: React errors are gracefully handled with recovery options</li>
+                <li><strong>Deduplication:</strong> Reports 1st, 10th, 20th errors daily</li>
               </ul>
             </li>
             <li><strong>Current Status:</strong> {import.meta.env.VITE_SENTRY_DSN ? 'Sentry Active' : 'Sentry Not Configured'}</li>
