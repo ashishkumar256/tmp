@@ -3,18 +3,15 @@ version: '3.8'
 services:
   ui:
     container_name: react
-    build: 
+    build:
       context: .
       args:
         SENTRY_AUTH_TOKEN: ${SENTRY_AUTH_TOKEN}
         RELEASE_NAME: ${RELEASE_NAME:-1.0.0}
-      ports:
+    ports:
       - "80:3000"
-    args:
-      SENTRY_AUTH_TOKEN: ${SENTRY_AUTH_TOKEN}
-      RELEASE_NAME: ${RELEASE_NAME:-1.0.0}      
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production
       - VITE_SENTRY_DSN=${VITE_SENTRY_DSN:-}
       - VITE_RELEASE_NAME=${RELEASE_NAME:-1.0.0}
       - CHOKIDAR_USEPOLLING=true
