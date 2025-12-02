@@ -50,7 +50,8 @@ const initSentry = () => {
     const config = {
       dsn: import.meta.env.VITE_SENTRY_DSN,
       environment: "development",
-      debug: true,
+      // TURN OFF DEBUG MODE to reduce noise
+      debug: false,
       tracesSampleRate: 1.0,
       release: "memory@1.0.0",
     };
@@ -114,15 +115,6 @@ const initSentry = () => {
     
     Sentry.init(config);
     console.log('Sentry initialized with DSN');
-    
-    // Test Sentry immediately
-    setTimeout(() => {
-      console.log('[Sentry Test] Sending test error...');
-      Sentry.captureException(new Error('Sentry initialization test - should be count #1'));
-      
-      // Also test a message
-      Sentry.captureMessage('Test message for deduplication', 'info');
-    }, 100);
     
   } else {
     console.log('Sentry not initialized - no DSN provided');
