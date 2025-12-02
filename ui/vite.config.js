@@ -10,10 +10,10 @@ export default defineConfig({
   plugins: [
     react(),
     sentryVitePlugin({
-      url: "https://sentry.io",
+      url: process.env.VITE_SENTRY_URL,
       authToken: process.env.SENTRY_AUTH_TOKEN,
-      org: "kumar-gn",
-      project: "poc",
+      org: process.env.VITE_SENTRY_ORG,
+      project: process.env.VITE_SENTRY_PROJECT,
       release: { 
         name: process.env.VITE_RELEASE_NAME,
         dist: process.env.VITE_SENTRY_DIST,

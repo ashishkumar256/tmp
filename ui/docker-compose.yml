@@ -9,12 +9,17 @@ services:
         SENTRY_AUTH_TOKEN: ${SENTRY_AUTH_TOKEN}
         VITE_RELEASE_NAME: ${VITE_RELEASE_NAME}
         VITE_SENTRY_DIST: ${ENV}
+        VITE_SENTRY_URL: ${VITE_SENTRY_URL}
+        VITE_SENTRY_ORG: ${VITE_SENTRY_ORG}
+        VITE_SENTRY_PROJECT: ${VITE_SENTRY_PROJECT}
     ports:
       - "80:3000"
     environment:
       - NODE_ENV=${ENV}
       - VITE_SENTRY_DSN=${VITE_SENTRY_DSN:-}
       - VITE_RELEASE_NAME=${VITE_RELEASE_NAME}
+      - VITE_SENTRY_DIST=${ENV}
+      - VITE_SENTRY_PROJECT=${VITE_SENTRY_PROJECT}
       - CHOKIDAR_USEPOLLING=true
     volumes:
       - .:/app

@@ -49,11 +49,19 @@ const initSentry = () => {
   if (import.meta.env.VITE_SENTRY_DSN) {
     const config = {
       dsn: import.meta.env.VITE_SENTRY_DSN,
-      environment: "development",
+      environment: import.meta.env.VITE_SENTRY_DIST,
       // TURN OFF DEBUG MODE to reduce noise
       debug: false,
       tracesSampleRate: 1.0,
-      release: "memory@1.0.0",
+
+      // NEW: Session Replay sampling
+      integrations: [
+        Sentry.replayIntegration()
+      ],
+      replaysSessionSampleRate: 0.01,   // 1% normal sessions
+      replaysOnErrorSampleRate: 1.0,   // 100% sessions when error captured
+
+      release: `${import.meta.env.VITE_SENTRY_PROJECT}@${import.meta.env.VITE_RELEASE_NAME}`,
     };
     
     // Check if custom dedupe strategy is enabled
