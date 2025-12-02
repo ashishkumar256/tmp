@@ -16,13 +16,15 @@ COPY . .
 
 RUN npm run build
 
-FROM node:18-alpine
+CMD ["npm", "run", "dev", "--", "--host"]
 
-WORKDIR /app
-RUN npm install -g serve
+# FROM node:18-alpine
 
-COPY --from=build /app/dist .
+# WORKDIR /app
+# RUN npm install -g serve
 
-EXPOSE 3000
+# COPY --from=build /app/dist .
 
-CMD ["serve", "-s", ".", "-l", "3000"]
+# EXPOSE 3000
+
+# CMD ["serve", "-s", ".", "-l", "3000"]
