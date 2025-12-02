@@ -8,6 +8,7 @@ export default defineConfig({
     sourcemap: true, // ✅ Required for source maps
   },
   plugins: [
+    react(),
     sentryVitePlugin({
       url: "https://sentry.io",
       authToken: process.env.SENTRY_AUTH_TOKEN,
