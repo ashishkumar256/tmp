@@ -26,7 +26,9 @@ export default defineConfig({
       url: "https://kumar-gn.sentry.io/",
 
       // 🔖 Release version (important for matching errors to source maps)
-      release: process.env.RELEASE_NAME || process.env.npm_package_version,
+      release: { 
+        name: process.env.VITE_RELEASE_NAME 
+      },
 
       // 🧹 Optional: clean up old source maps before uploading
       cleanArtifacts: true,
