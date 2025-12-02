@@ -16,7 +16,7 @@ export default defineConfig({
       release: { 
         name: process.env.VITE_RELEASE_NAME 
       },
-      dist: process.env.NODE_ENV, 
+      dist: process.env.VITE_SENTRY_DIST,
       cleanArtifacts: true,
     }),
   ],

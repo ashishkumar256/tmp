@@ -8,10 +8,11 @@ services:
       args:
         SENTRY_AUTH_TOKEN: ${SENTRY_AUTH_TOKEN}
         VITE_RELEASE_NAME: ${VITE_RELEASE_NAME}
+        VITE_SENTRY_DIST: ${ENV}
     ports:
       - "80:3000"
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=${ENV}
       - VITE_SENTRY_DSN=${VITE_SENTRY_DSN:-}
       - VITE_RELEASE_NAME=${VITE_RELEASE_NAME}
       - CHOKIDAR_USEPOLLING=true
