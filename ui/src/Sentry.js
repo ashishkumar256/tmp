@@ -123,33 +123,30 @@ const initSentry = () => {
       debug: true,
       tracesSampleRate: 1.0,
       release: import.meta.env.VITE_RELEASE_NAME || import.meta.env.npm_package_version,
-      // Disable automatic performance monitoring to reduce noise
-      integrations: function(integrations) {
-        // Filter out performance monitoring integrations if not needed
-        return integrations.filter(integration => 
-          integration.name !== 'BrowserTracing' && 
-          integration.name !== 'BrowserProfilingIntegration' &&
-          integration.name !== 'Replay'
-        );
-      }
     };
 
     // Check if custom dedupe strategy is enabled
     if (import.meta.env.VITE_DEDUPE_STRATEGY === 'custom') {
-      // Add only our custom dedupe integration
-      config.integrations = [
-        new CustomDedupeIntegration()
-      ];
-
-      // Disable default integrations
-      config.defaultIntegrations = false;
+      // Use default integrations but filter out the built-in Dedupe integration
+      // and add our custom dedupe integration
+      config.integrations = (defaultIntegrations) => {
+        // Filter out the built-in Dedupe integration
+        const filteredIntegrations = defaultIntegrations.filter(
+          integration => integration.name !== 'Dedupe'
+        );
+        
+        // Add our custom dedupe integration
+        return [
+          ...filteredIntegrations,
+          new CustomDedupeIntegration()
+        ];
+      };
 
       console.log('[Sentry] Custom deduplication strategy enabled');
       console.log('[Sentry] Each unique error will be reported at: 1st, 11th, 21st, 31st... (resets daily)');
       console.log('[Sentry] Different errors have separate counters');
     } else {
-      // Use default integrations (including dedupe)
-      config.integrations = Sentry.defaultIntegrations;
+      // Use default integrations (including built-in dedupe)
       console.log('[Sentry] Using default deduplication strategy');
     }
 
