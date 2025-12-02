@@ -102,7 +102,6 @@ const initSentry = () => {
           fingerprint: fingerprint,
           count: currentCount,
           nextReportAt: Math.floor((currentCount - 1) / 10) * 10 + 11,
-          type: 'per_error_deduplication'
         };
         
         return event;
