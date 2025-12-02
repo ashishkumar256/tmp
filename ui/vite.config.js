@@ -8,29 +8,15 @@ export default defineConfig({
     sourcemap: true, // ✅ Required for source maps
   },
   plugins: [
-    react(),
     sentryVitePlugin({
-      // 🔑 Auth token from Sentry (set in .env, never commit directly)
+      url: "https://sentry.io",
       authToken: process.env.SENTRY_AUTH_TOKEN,
-
-      // 🏢 Your Sentry organization slug
       org: "kumar-gn",
-
-      // 📦 Your Sentry project slug
       project: "poc",
-
-      // 📂 Path to built assets containing source maps
-      include: "./dist/assets",
-
-      // 🌍 Sentry SaaS URL (default is https://sentry.io/)
-      url: "https://kumar-gn.sentry.io/",
-
-      // 🔖 Release version (important for matching errors to source maps)
       release: { 
         name: process.env.VITE_RELEASE_NAME 
       },
-
-      // 🧹 Optional: clean up old source maps before uploading
+      dist: process.env.NODE_ENV, 
       cleanArtifacts: true,
     }),
   ],
