@@ -14,9 +14,9 @@ export default defineConfig({
       org: "kumar-gn",
       project: "poc",
       release: { 
-        name: process.env.VITE_RELEASE_NAME 
+        name: process.env.VITE_RELEASE_NAME,
+        dist: process.env.VITE_SENTRY_DIST,
       },
-      dist: process.env.VITE_SENTRY_DIST,
       cleanArtifacts: true,
     }),
   ],
