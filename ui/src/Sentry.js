@@ -56,10 +56,7 @@ const initSentry = () => {
     };
     
     // Check if custom dedupe strategy is enabled
-    if (import.meta.env.VITE_DEDUPE_STRATEGY === 'custom') {
-      console.log('[Sentry] Custom deduplication enabled: Reporting only errors #1, 11, 21, 31...');
-      console.log('[Sentry] Each unique error type has its own counter (resets daily)');
-      
+    if (import.meta.env.VITE_DEDUPE_STRATEGY === 'custom') {      
       // CRITICAL: We need to filter out the built-in Dedupe integration
       config.integrations = (integrations) => {
         // Remove Sentry's built-in Dedupe integration
@@ -67,17 +64,15 @@ const initSentry = () => {
           integration.name !== 'Dedupe'
         );
         
-        console.log('[Sentry] Integrations after filtering:', filteredIntegrations.map(i => i.name));
+        // console.log('[Sentry] Integrations after filtering:', filteredIntegrations.map(i => i.name));
+        console.log('[Sentry] Using custom deduplication strategy');
         return filteredIntegrations;
       };
       
       // Add our custom deduplication logic in beforeSend
-      config.beforeSend = (event, hint) => {
-        console.log('[Sentry Custom Dedupe] Processing event:', event.type, event.message);
-        
+      config.beforeSend = (event, hint) => {        
         // Skip non-error events (transactions, replays, outcomes, etc.)
         if (!event.exception?.values && !event.message) {
-          console.log('[Sentry Custom Dedupe] Non-error event, allowing through');
           return event;
         }
         
@@ -85,7 +80,7 @@ const initSentry = () => {
         const fingerprint = getErrorFingerprint(event);
         
         if (fingerprint === 'unknown') {
-          console.log('[Sentry Custom Dedupe] Unknown fingerprint, allowing through');
+          console.log('Unknown fingerprint, allowing through');
           return event;
         }
         
