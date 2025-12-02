@@ -1,40 +1,6 @@
 import * as Sentry from '@sentry/react';
 
-// Check if this is an error event (not transaction, replay, etc.)
-const isErrorEvent = (event) => {
-  // Error events have exception values
-  if (event.exception?.values?.length > 0) {
-    return true;
-  }
-  
-  // Message events are also errors/warnings/info
-  if (event.message) {
-    return true;
-  }
-  
-  // Transactions, replays, outcomes, etc. should not be deduplicated
-  return false;
-};
-
-// Generate a fingerprint for an error
-const getErrorFingerprint = (event) => {
-  // For error events with exception
-  const exception = event.exception?.values?.[0];
-  if (exception) {
-    const message = exception.value || '';
-    const type = exception.type || '';
-    return `${type}:${message}`.toLowerCase().replace(/\s+/g, '_');
-  }
-  
-  // For message events
-  if (event.message) {
-    return `message:${event.message}`.toLowerCase().replace(/\s+/g, '_');
-  }
-  
-  return 'unknown';
-};
-
-// Storage for deduplication tracking
+// Storage for deduplication tracking - by error fingerprint
 const getDailyKey = (fingerprint) => {
   const now = new Date();
   return `sentry-dedup-${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}-${fingerprint}`;
@@ -60,11 +26,29 @@ const shouldReportError = (fingerprint) => {
   return count === 1 || (count - 1) % 10 === 0;
 };
 
+// Generate a fingerprint for an error
+const getErrorFingerprint = (event) => {
+  // For error events with exception
+  const exception = event.exception?.values?.[0];
+  if (exception) {
+    const message = exception.value || '';
+    const type = exception.type || '';
+    return `${type}:${message}`.toLowerCase().replace(/\s+/g, '_');
+  }
+  
+  // For message events
+  if (event.message) {
+    return `message:${event.message}`.toLowerCase().replace(/\s+/g, '_');
+  }
+  
+  return 'unknown';
+};
+
 // Custom event processor for deduplication
 const dedupeEventProcessor = (event) => {
   // Skip non-error events (transactions, replays, outcomes, etc.)
-  if (!isErrorEvent(event)) {
-    console.log('[Sentry Dedupe] Skipping non-error event (transaction/replay/outcome)');
+  // Only process error-like events
+  if (!event.exception?.values && !event.message) {
     return event; // Allow through without deduplication
   }
   
@@ -78,9 +62,9 @@ const dedupeEventProcessor = (event) => {
   }
   
   const shouldReport = shouldReportError(fingerprint);
+  const currentCount = getErrorCount(fingerprint);
   
   if (!shouldReport) {
-    const currentCount = getErrorCount(fingerprint);
     const nextReportAt = Math.floor((currentCount - 1) / 10) * 10 + 11;
     console.log(`[Sentry Dedupe] Skipping "${fingerprint}" error #${currentCount} - Next report at #${nextReportAt}`);
     
@@ -88,7 +72,6 @@ const dedupeEventProcessor = (event) => {
     return null;
   }
   
-  const currentCount = getErrorCount(fingerprint);
   console.log(`[Sentry Dedupe] Reporting "${fingerprint}" error #${currentCount} of the day`);
   
   // Add deduplication metadata to the event
@@ -104,7 +87,7 @@ const dedupeEventProcessor = (event) => {
   return event;
 };
 
-// Custom integration for deduplication with proper Sentry integration structure
+// Custom integration for deduplication
 class CustomDedupeIntegration {
   static id = 'CustomDedupe';
   name = 'CustomDedupe';
@@ -122,17 +105,17 @@ const initSentry = () => {
       environment: "development",
       debug: true,
       tracesSampleRate: 1.0,
-      release: import.meta.env.VITE_RELEASE_NAME || import.meta.env.npm_package_version,
+      release: "memory@1.0.0",
     };
-
+    
     // Check if custom dedupe strategy is enabled
     if (import.meta.env.VITE_DEDUPE_STRATEGY === 'custom') {
-      // Use default integrations but filter out the built-in Dedupe integration
-      // and add our custom dedupe integration
-      config.integrations = (defaultIntegrations) => {
-        // Filter out the built-in Dedupe integration
-        const filteredIntegrations = defaultIntegrations.filter(
-          integration => integration.name !== 'Dedupe'
+      // Disable default integrations and manually add all except dedupe
+      config.defaultIntegrations = false;
+      config.integrations = (integrations) => {
+        // Filter out the default Dedupe integration
+        const filteredIntegrations = integrations.filter(integration => 
+          integration.name !== 'Dedupe'
         );
         
         // Add our custom dedupe integration
@@ -141,15 +124,15 @@ const initSentry = () => {
           new CustomDedupeIntegration()
         ];
       };
-
-      console.log('[Sentry] Custom deduplication strategy enabled');
-      console.log('[Sentry] Each unique error will be reported at: 1st, 11th, 21st, 31st... (resets daily)');
-      console.log('[Sentry] Different errors have separate counters');
+      
+      console.log('[Sentry] Custom deduplication enabled: Reporting only errors #1, 11, 21, 31...');
+      console.log('[Sentry] Each unique error type has its own counter (resets daily)');
     } else {
-      // Use default integrations (including built-in dedupe)
+      // Use default integrations (including dedupe)
+      config.integrations = Sentry.defaultIntegrations;
       console.log('[Sentry] Using default deduplication strategy');
     }
-
+    
     Sentry.init(config);
     console.log('Sentry initialized with DSN');
   } else {
