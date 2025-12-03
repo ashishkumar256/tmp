@@ -1,5 +1,6 @@
 // src/Sentry.js
 import * as Sentry from "@sentry/react";
+import { BrowserTracing } from "@sentry/react";   // ✅ Performance monitoring
 import "@sentry/replay";   // ✅ Required for Replay
 
 // -----------------------------
@@ -45,76 +46,85 @@ const getErrorFingerprint = (event) => {
 // Initialization
 // -----------------------------
 const initSentry = () => {
-  if (import.meta.env.VITE_SENTRY_DSN) {
-    // ✅ Define Replay integration once
-    const replay = Sentry.replayIntegration({
-      maskAllText: false,   // show UI text
-      maskAllInputs: true,  // keep PII masked
-      blockAllMedia: true   // safer default
-    });
+  if (!import.meta.env.VITE_SENTRY_DSN) {
+    console.log("Sentry not initialized - no DSN provided");
+    return;
+  }
 
-    const baseConfig = {
-      dsn: import.meta.env.VITE_SENTRY_DSN,
-      environment: import.meta.env.VITE_SENTRY_DIST,
-      debug: false,
-      tracesSampleRate: 1.0,
-      release: `${import.meta.env.VITE_SENTRY_PROJECT}@${import.meta.env.VITE_RELEASE_NAME}`,
-      replaysSessionSampleRate: 1.0,   // capture all sessions
-      replaysOnErrorSampleRate: 1.0,   // capture all sessions with errors
+  // ✅ Define Replay integration once
+  const replay = Sentry.replayIntegration({
+    maskAllText: false,   // show UI text
+    maskAllInputs: true,  // keep PII masked
+    blockAllMedia: true   // safer default
+  });
+
+  const baseConfig = {
+    dsn: import.meta.env.VITE_SENTRY_DSN,
+    environment: import.meta.env.VITE_SENTRY_DIST,
+    debug: false,
+    release: `${import.meta.env.VITE_SENTRY_PROJECT}@${import.meta.env.VITE_RELEASE_NAME}`,
+
+    // ✅ Performance monitoring
+    tracesSampleRate: 1.0,   // capture 100% of transactions (adjust in production)
+
+    // ✅ Replay sampling
+    replaysSessionSampleRate: 1.0,   // capture all sessions
+    replaysOnErrorSampleRate: 1.0,   // capture all sessions with errors
+  };
+
+  if (import.meta.env.VITE_DEDUPE_STRATEGY === "custom") {
+    baseConfig.integrations = (integrations) => {
+      const filtered = integrations.filter(
+        (integration) => integration.name !== "Dedupe"
+      );
+      filtered.push(
+        new BrowserTracing(),  // ✅ add performance monitoring
+        replay                 // ✅ add Replay
+      );
+      console.log("[Sentry] Using custom deduplication strategy + Replay + Performance");
+      return filtered;
     };
 
-    if (import.meta.env.VITE_DEDUPE_STRATEGY === "custom") {
-      baseConfig.integrations = (integrations) => {
-        const filtered = integrations.filter(
-          (integration) => integration.name !== "Dedupe"
-        );
-        filtered.push(replay);   // ✅ reuse Replay
-        console.log("[Sentry] Using custom deduplication strategy + Replay");
-        return filtered;
-      };
+    baseConfig.beforeSend = (event) => {
+      if (!event.exception?.values && !event.message) return event;
+      const fingerprint = getErrorFingerprint(event);
+      if (fingerprint === "unknown") return event;
 
-      baseConfig.beforeSend = (event) => {
-        if (!event.exception?.values && !event.message) return event;
-        const fingerprint = getErrorFingerprint(event);
-        if (fingerprint === "unknown") return event;
+      const shouldReport = shouldReportError(fingerprint);
+      const currentCount = getErrorCount(fingerprint);
 
-        const shouldReport = shouldReportError(fingerprint);
-        const currentCount = getErrorCount(fingerprint);
-
-        if (!shouldReport) {
-          const nextReportAt = Math.floor((currentCount - 1) / 10) * 10 + 11;
-          console.log(
-            `[Sentry Custom Dedupe] Skipping "${fingerprint}" error #${currentCount} - Next report at #${nextReportAt}`
-          );
-          return null;
-        }
-
+      if (!shouldReport) {
+        const nextReportAt = Math.floor((currentCount - 1) / 10) * 10 + 11;
         console.log(
-          `[Sentry Custom Dedupe] Reporting "${fingerprint}" error #${currentCount} of the day`
+          `[Sentry Custom Dedupe] Skipping "${fingerprint}" error #${currentCount} - Next report at #${nextReportAt}`
         );
+        return null;
+      }
 
-        event.extra = event.extra || {};
-        event.extra.deduplication = {
-          day: new Date().toISOString().split("T")[0],
-          fingerprint,
-          count: currentCount,
-          nextReportAt: Math.floor((currentCount - 1) / 10) * 10 + 11,
-        };
-        return event;
+      console.log(
+        `[Sentry Custom Dedupe] Reporting "${fingerprint}" error #${currentCount} of the day`
+      );
+
+      event.extra = event.extra || {};
+      event.extra.deduplication = {
+        day: new Date().toISOString().split("T")[0],
+        fingerprint,
+        count: currentCount,
+        nextReportAt: Math.floor((currentCount - 1) / 10) * 10 + 11,
       };
-    } else {
-      baseConfig.integrations = [
-        ...Sentry.defaultIntegrations,
-        replay   // ✅ reuse Replay
-      ];
-      console.log("[Sentry] Using default deduplication + Replay");
-    }
-
-    Sentry.init(baseConfig);
-    console.log("Sentry initialized with DSN + Replay");
+      return event;
+    };
   } else {
-    console.log("Sentry not initialized - no DSN provided");
+    baseConfig.integrations = [
+      ...Sentry.defaultIntegrations,
+      new BrowserTracing(),  // ✅ add performance monitoring
+      replay                 // ✅ add Replay
+    ];
+    console.log("[Sentry] Using default deduplication + Replay + Performance");
   }
+
+  Sentry.init(baseConfig);
+  console.log("Sentry initialized with DSN + Replay + Performance");
 };
 
 initSentry();
