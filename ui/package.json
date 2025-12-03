@@ -6,12 +6,12 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "serve -s dist -l 3000"
   },
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "@sentry/react": "^7.91.0",
+    "@sentry/replay": "^7.91.0",
     "serve": "^14.2.0"
   },
   "devDependencies": {
