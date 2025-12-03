@@ -1,6 +1,10 @@
+// src/Sentry.js
 import * as Sentry from "@sentry/react";
 import "@sentry/replay";   // ✅ Required for Replay
 
+// -----------------------------
+// Deduplication helpers
+// -----------------------------
 const getDailyKey = (fingerprint) => {
   const now = new Date();
   return `sentry-dedup-${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}-${fingerprint}`;
@@ -21,7 +25,6 @@ const incrementErrorCount = (fingerprint) => {
 
 const shouldReportError = (fingerprint) => {
   const count = incrementErrorCount(fingerprint);
-  // Report 1st, 11th, 21st, ... errors (every 10th after the first)
   return count === 1 || (count - 1) % 10 === 0;
 };
 
@@ -38,38 +41,40 @@ const getErrorFingerprint = (event) => {
   return "unknown";
 };
 
-
+// -----------------------------
+// Initialization
+// -----------------------------
 const initSentry = () => {
   if (import.meta.env.VITE_SENTRY_DSN) {
+    // ✅ Define Replay integration once
+    const replay = Sentry.replayIntegration({
+      maskAllText: false,   // show UI text
+      maskAllInputs: true,  // keep PII masked
+      blockAllMedia: true   // safer default
+    });
+
     const baseConfig = {
       dsn: import.meta.env.VITE_SENTRY_DSN,
       environment: import.meta.env.VITE_SENTRY_DIST,
       debug: false,
       tracesSampleRate: 1.0,
       release: `${import.meta.env.VITE_SENTRY_PROJECT}@${import.meta.env.VITE_RELEASE_NAME}`,
-
-      // ✅ Replay sampling
-      sendDefaultPii: true,
       replaysSessionSampleRate: 1.0,   // capture all sessions
       replaysOnErrorSampleRate: 1.0,   // capture all sessions with errors
     };
 
     if (import.meta.env.VITE_DEDUPE_STRATEGY === "custom") {
       baseConfig.integrations = (integrations) => {
-        // keep all default integrations except Dedupe
         const filtered = integrations.filter(
           (integration) => integration.name !== "Dedupe"
         );
-        // ✅ add Replay back in
-        filtered.push(Sentry.replayIntegration());
+        filtered.push(replay);   // ✅ reuse Replay
         console.log("[Sentry] Using custom deduplication strategy + Replay");
         return filtered;
       };
 
-      baseConfig.beforeSend = (event, hint) => {
-        if (!event.exception?.values && !event.message) {
-          return event;
-        }
+      baseConfig.beforeSend = (event) => {
+        if (!event.exception?.values && !event.message) return event;
         const fingerprint = getErrorFingerprint(event);
         if (fingerprint === "unknown") return event;
 
@@ -98,14 +103,9 @@ const initSentry = () => {
         return event;
       };
     } else {
-      // ✅ default integrations + Replay
       baseConfig.integrations = [
         ...Sentry.defaultIntegrations,
-        Sentry.replayIntegration({
-          maskAllText: false,    // show UI text
-          maskAllInputs: true,   // keep PII in forms masked
-          blockAllMedia: false    // set true, safer for production
-        }),
+        replay   // ✅ reuse Replay
       ];
       console.log("[Sentry] Using default deduplication + Replay");
     }
@@ -118,6 +118,5 @@ const initSentry = () => {
 };
 
 initSentry();
-
 export { Sentry };
 export default Sentry;
