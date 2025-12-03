@@ -49,7 +49,7 @@ const initSentry = () => {
       release: `${import.meta.env.VITE_SENTRY_PROJECT}@${import.meta.env.VITE_RELEASE_NAME}`,
 
       // ✅ Replay sampling
-      sendDefaultPii: false,
+      sendDefaultPii: true,
       replaysSessionSampleRate: 1.0,   // capture all sessions
       replaysOnErrorSampleRate: 1.0,   // capture all sessions with errors
     };
@@ -104,7 +104,7 @@ const initSentry = () => {
         Sentry.replayIntegration({
           maskAllText: false,    // show UI text
           maskAllInputs: true,   // keep PII in forms masked
-          blockAllMedia: true    // set true, safer for production
+          blockAllMedia: false    // set true, safer for production
         }),
       ];
       console.log("[Sentry] Using default deduplication + Replay");
