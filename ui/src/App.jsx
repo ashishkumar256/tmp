@@ -71,50 +71,34 @@ function MemoryCalculator() {
 
     const lenNum = Number(length);
     
-    // Remove the safety check to allow unhandled RangeError
-    // Just attempt to create the array - this will throw RangeError for very large values
-    try {
-      // This will throw RangeError if lenNum is too large (like 4294967295)
-      const arr = new Array(lenNum);
-      
-      // If we get here, allocation succeeded
-      const bytes = bytesForArrayLength(length);
-      const hr = humanReadable(bytes);
-      setResult({
-        length: lenNum,
-        bytes: bytes,
-        humanReadable: `${hr.value} ${hr.unit}`,
-        hrValue: hr.value,
-        hrUnit: hr.unit,
-        bits: bytes * 8n
+    // ⚠️ This will throw UNHANDLED RangeError for very large values (like 4294967296)
+    // No try-catch here - let it bubble up as unhandled
+    const arr = new Array(lenNum);
+    
+    // If we get here, allocation succeeded
+    const bytes = bytesForArrayLength(length);
+    const hr = humanReadable(bytes);
+    setResult({
+      length: lenNum,
+      bytes: bytes,
+      humanReadable: `${hr.value} ${hr.unit}`,
+      hrValue: hr.value,
+      hrUnit: hr.unit,
+      bits: bytes * 8n
+    });
+    
+    if (Sentry && Sentry.captureMessage) {
+      Sentry.captureMessage("Array memory calculation completed", {
+        level: 'info',
+        extra: {
+          arrayLength: lenNum,
+          memoryBytes: bytes.toString(),
+          memoryReadable: `${hr.value} ${hr.unit}`
+        }
       });
-      
-      if (Sentry && Sentry.captureMessage) {
-        Sentry.captureMessage("Array memory calculation completed", {
-          level: 'info',
-          extra: {
-            arrayLength: lenNum,
-            memoryBytes: bytes.toString(),
-            memoryReadable: `${hr.value} ${hr.unit}`
-          }
-        });
-      }
-    } catch (err) {
-      console.error('Array creation error:', err);
-      
-      // This is where we get UNHANDLED RangeError
-      // Don't catch it - let it bubble up so Sentry can capture it as unhandled
-      // But we need to show it to the user first
-      setError(`Error: ${err.message}`);
-      
-      // Re-throw the error to make it unhandled for Sentry
-      // Using setTimeout to avoid breaking React's render cycle
-      setTimeout(() => {
-        throw err;
-      }, 0);
-    } finally {
-      setIsCalculating(false);
     }
+    
+    setIsCalculating(false);
   }, [lengthInput, bytesForArrayLength, humanReadable]);
 
   const handleKeyUp = useCallback((event) => {
@@ -145,7 +129,7 @@ function MemoryCalculator() {
           <div className="input-group">
             <input
               type="text"
-              placeholder="e.g., 4294967295"
+              placeholder="e.g., 4294967296"
               value={lengthInput}
               onChange={handleInputChange}
               onKeyUp={handleKeyUp}
@@ -193,11 +177,11 @@ function MemoryCalculator() {
             <li>Shows both bytes and bits for the estimated memory usage</li>
             <li>Converts large values to human-readable format (KB, MB, GB, etc.)</li>
             <li><strong>Integer-only input:</strong> Only whole numbers are allowed</li>
-            <li><strong>Test with 4294967295</strong> to trigger an unhandled RangeError that Sentry will capture</li>
+            <li><strong>Test with 4294967296</strong> to trigger an unhandled RangeError that Sentry will capture</li>
             <li><strong>Sentry Error Tracking:</strong>
               <ul>
-                <li>Handled Errors: Empty and zero inputs are caught and logged</li>
-                <li>Unhandled Errors: RangeError from large arrays (like 4294967295) will crash and be captured</li>
+                <li>Handled Errors: Empty and zero inputs are caught and logged without crashing</li>
+                <li>Unhandled Errors: RangeError from large arrays (like 4294967296) will crash and be captured by Sentry</li>
                 <li>Error Context: Sentry records input values, stack traces, and user actions</li>
                 <li>Real-time Monitoring: Errors appear in your Sentry dashboard immediately</li>
                 <li>Error Boundaries: React errors are gracefully handled with recovery options</li>
