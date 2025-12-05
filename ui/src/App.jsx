@@ -70,7 +70,7 @@ function MemoryCalculator() {
     }
 
     const lenNum = Number(length);
-    
+
     // ⚠️ This will throw UNHANDLED RangeError for very large values (like 4294967296)
     // No try-catch here - let it bubble up as unhandled
     const arr = new Array(lenNum);
@@ -129,7 +129,7 @@ function MemoryCalculator() {
           <div className="input-group">
             <input
               type="text"
-              placeholder="e.g., 4294967296"
+              placeholder="e.g., 4294967295"
               value={lengthInput}
               onChange={handleInputChange}
               onKeyUp={handleKeyUp}
