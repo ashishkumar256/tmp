@@ -9,7 +9,6 @@ function MemoryCalculator() {
   const [lengthInput, setLengthInput] = useState('');
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
-  const [isCalculating, setIsCalculating] = useState(false);
   const inputRef = useRef(null);
 
   const handleInputChange = useCallback((e) => {
@@ -43,7 +42,6 @@ function MemoryCalculator() {
     const input = lengthInput.trim();
     setResult(null);
     setError('');
-    setIsCalculating(true);
     
     let length;
     
@@ -59,7 +57,6 @@ function MemoryCalculator() {
     } catch (err) {
       console.error('Validation error:', err);
       setError(err.message);
-      setIsCalculating(false);
       if (Sentry && Sentry.captureException) {
         Sentry.captureException(err, {
           tags: { type: 'validation_error' },
@@ -70,7 +67,7 @@ function MemoryCalculator() {
     }
 
     const lenNum = Number(length);
-
+    
     // ⚠️ This will throw UNHANDLED RangeError for very large values (like 4294967296)
     // No try-catch here - let it bubble up as unhandled
     const arr = new Array(lenNum);
@@ -97,8 +94,6 @@ function MemoryCalculator() {
         }
       });
     }
-    
-    setIsCalculating(false);
   }, [lengthInput, bytesForArrayLength, humanReadable]);
 
   const handleKeyUp = useCallback((event) => {
@@ -139,11 +134,11 @@ function MemoryCalculator() {
               pattern="[0-9]*"
             />
             <button
-              className={`btn btn-calculate ${isCalculating ? 'calculating' : ''}`}
+              className="btn btn-calculate"
               onClick={processCalculate}
-              disabled={!lengthInput.trim() || isCalculating}
+              disabled={!lengthInput.trim()}
             >
-              {isCalculating ? 'Calculating...' : 'Calculate'}
+              Calculate
             </button>
           </div>
         </div>
