@@ -174,8 +174,7 @@ function MemoryCalculator() {
           <h3>About this Calculator & Sentry Demo</h3>
           <ul>
             <li>Estimates memory usage assuming each array element is a JavaScript Number (8 bytes)</li>
-            <li>Shows both bytes and bits for the estimated memory usage</li>
-            <li>Converts large values to human-readable format (KB, MB, GB, etc.)</li>
+            <li>Shows large values to human-readable format (KB, MB, GB, etc.)</li>
             <li><strong>Integer-only input:</strong> Only whole numbers are allowed</li>
             <li><strong>Test with 4294967296</strong> to trigger an unhandled RangeError that Sentry will capture</li>
             <li><strong>Sentry Error Tracking:</strong>
@@ -188,7 +187,7 @@ function MemoryCalculator() {
                 <li><strong>Deduplication:</strong> Reports 1st, 10th, 20th errors daily</li>
               </ul>
             </li>
-            <li><strong>Current Status:</strong> {import.meta.env.VITE_SENTRY_DSN ? 'Sentry Active' : 'Sentry Not Configured'}</li>
+            {/* <li><strong>Current Status:</strong> {import.meta.env.VITE_SENTRY_DSN ? 'Sentry Active' : 'Sentry Not Configured'}</li> */}
           </ul>
         </div>
       </div>
