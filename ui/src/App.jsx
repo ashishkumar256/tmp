@@ -9,6 +9,7 @@ function MemoryCalculator() {
   const [lengthInput, setLengthInput] = useState('');
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
+  const [isCalculating, setIsCalculating] = useState(false);
   const inputRef = useRef(null);
 
   const handleInputChange = useCallback((e) => {
@@ -42,9 +43,11 @@ function MemoryCalculator() {
     const input = lengthInput.trim();
     setResult(null);
     setError('');
+    setIsCalculating(true);
+    
     let length;
-
-    // ✅ Handle validation errors (empty and zero)
+    
+    // ✅ Handle validation errors (empty and zero) - these are HANDLED errors
     try {
       if (!input) {
         throw new Error('Please enter an array length');
@@ -56,6 +59,7 @@ function MemoryCalculator() {
     } catch (err) {
       console.error('Validation error:', err);
       setError(err.message);
+      setIsCalculating(false);
       if (Sentry && Sentry.captureException) {
         Sentry.captureException(err, {
           tags: { type: 'validation_error' },
@@ -66,53 +70,50 @@ function MemoryCalculator() {
     }
 
     const lenNum = Number(length);
-
-    // ✅ Guard against RangeError
-    if (Number.isSafeInteger(lenNum) && lenNum > 0 && lenNum < 1e7) {
-      try {
-        const arr = new Array(lenNum); // safe allocation
-        const bytes = bytesForArrayLength(length);
-
-        const hr = humanReadable(bytes);
-        setResult({
-          length: lenNum,
-          bytes: bytes,
-          humanReadable: `${hr.value} ${hr.unit}`,
-          hrValue: hr.value,
-          hrUnit: hr.unit,
-          bits: bytes * 8n
-        });
-
-        if (Sentry && Sentry.captureMessage) {
-          Sentry.captureMessage("Array memory calculation completed", {
-            level: 'info',
-            extra: {
-              arrayLength: lenNum,
-              memoryBytes: bytes.toString(),
-              memoryReadable: `${hr.value} ${hr.unit}`
-            }
-          });
-        }
-      } catch (err) {
-        console.error('RangeError:', err);
-        setError(`RangeError: Input too large. This is a system limitation.`);
-        if (Sentry && Sentry.captureException) {
-          Sentry.captureException(err, {
-            tags: { type: 'range_error' },
-            extra: { input: lengthInput }
-          });
-        }
-      }
-    } else {
-      // ❗ Explicitly handle unsafe lengths
-      const errMsg = `RangeError: Array length ${lenNum.toLocaleString()} is too large. This is a system limitation.`;
-      setError(errMsg);
-      if (Sentry && Sentry.captureException) {
-        Sentry.captureException(new RangeError(errMsg), {
-          tags: { type: 'range_error' },
-          extra: { input: lengthInput }
+    
+    // Remove the safety check to allow unhandled RangeError
+    // Just attempt to create the array - this will throw RangeError for very large values
+    try {
+      // This will throw RangeError if lenNum is too large (like 4294967295)
+      const arr = new Array(lenNum);
+      
+      // If we get here, allocation succeeded
+      const bytes = bytesForArrayLength(length);
+      const hr = humanReadable(bytes);
+      setResult({
+        length: lenNum,
+        bytes: bytes,
+        humanReadable: `${hr.value} ${hr.unit}`,
+        hrValue: hr.value,
+        hrUnit: hr.unit,
+        bits: bytes * 8n
+      });
+      
+      if (Sentry && Sentry.captureMessage) {
+        Sentry.captureMessage("Array memory calculation completed", {
+          level: 'info',
+          extra: {
+            arrayLength: lenNum,
+            memoryBytes: bytes.toString(),
+            memoryReadable: `${hr.value} ${hr.unit}`
+          }
         });
       }
+    } catch (err) {
+      console.error('Array creation error:', err);
+      
+      // This is where we get UNHANDLED RangeError
+      // Don't catch it - let it bubble up so Sentry can capture it as unhandled
+      // But we need to show it to the user first
+      setError(`Error: ${err.message}`);
+      
+      // Re-throw the error to make it unhandled for Sentry
+      // Using setTimeout to avoid breaking React's render cycle
+      setTimeout(() => {
+        throw err;
+      }, 0);
+    } finally {
+      setIsCalculating(false);
     }
   }, [lengthInput, bytesForArrayLength, humanReadable]);
 
@@ -144,7 +145,7 @@ function MemoryCalculator() {
           <div className="input-group">
             <input
               type="text"
-              placeholder="e.g., 1000000"
+              placeholder="e.g., 4294967295"
               value={lengthInput}
               onChange={handleInputChange}
               onKeyUp={handleKeyUp}
@@ -154,11 +155,11 @@ function MemoryCalculator() {
               pattern="[0-9]*"
             />
             <button
-              className="btn btn-calculate"
+              className={`btn btn-calculate ${isCalculating ? 'calculating' : ''}`}
               onClick={processCalculate}
-              disabled={!lengthInput.trim()}
+              disabled={!lengthInput.trim() || isCalculating}
             >
-              Calculate
+              {isCalculating ? 'Calculating...' : 'Calculate'}
             </button>
           </div>
         </div>
@@ -178,7 +179,6 @@ function MemoryCalculator() {
                 <span className="unit-only">{result.hrUnit}</span>
               </div>
             </div>
-
             <div className="action-buttons">
               <button onClick={clearResults} className="btn btn-secondary">
                 Clear
@@ -193,10 +193,11 @@ function MemoryCalculator() {
             <li>Shows both bytes and bits for the estimated memory usage</li>
             <li>Converts large values to human-readable format (KB, MB, GB, etc.)</li>
             <li><strong>Integer-only input:</strong> Only whole numbers are allowed</li>
+            <li><strong>Test with 4294967295</strong> to trigger an unhandled RangeError that Sentry will capture</li>
             <li><strong>Sentry Error Tracking:</strong>
               <ul>
-                <li>Handled Errors: Empty and zero inputs are caught and logged without crashing</li>
-                <li>RangeError: Very large array lengths are caught and shown as system limitations</li>
+                <li>Handled Errors: Empty and zero inputs are caught and logged</li>
+                <li>Unhandled Errors: RangeError from large arrays (like 4294967295) will crash and be captured</li>
                 <li>Error Context: Sentry records input values, stack traces, and user actions</li>
                 <li>Real-time Monitoring: Errors appear in your Sentry dashboard immediately</li>
                 <li>Error Boundaries: React errors are gracefully handled with recovery options</li>
