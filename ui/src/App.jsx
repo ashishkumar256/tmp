@@ -1,7 +1,7 @@
 // src/App.jsx
 import React, { useState, useCallback, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
-import { Sentry } from './Sentry';
+import { Sentry, startManualTrace, addManualSpan, getCurrentTraceId } from './Sentry';
 import ErrorBoundary from './ErrorBoundary';
 import './App.css';
 
@@ -9,7 +9,31 @@ function MemoryCalculator() {
   const [lengthInput, setLengthInput] = useState('');
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
+  const [traceId, setTraceId] = useState('');
   const inputRef = useRef(null);
+  
+  // Debug logging helper
+  const logTraceEvent = useCallback((event, data = {}) => {
+    const currentTraceId = getCurrentTraceId();
+    console.log(`[Trace Event] ${event}`, {
+      ...data,
+      traceId: currentTraceId,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Also log to Sentry as breadcrumb
+    if (Sentry && Sentry.addBreadcrumb) {
+      Sentry.addBreadcrumb({
+        category: 'manual_trace',
+        message: event,
+        level: 'info',
+        data: {
+          ...data,
+          traceId: currentTraceId
+        }
+      });
+    }
+  }, []);
 
   const handleInputChange = useCallback((e) => {
     const value = e.target.value;
@@ -42,11 +66,25 @@ function MemoryCalculator() {
     const input = lengthInput.trim();
     setResult(null);
     setError('');
+    setTraceId('');
+    
+    // Start manual trace
+    const traceResult = startManualTrace();
+    if (traceResult) {
+      setTraceId(traceResult.traceId);
+      console.log(`[Manual Trace] Started trace: ${traceResult.traceId}`);
+    }
+    
+    logTraceEvent('calculation_started', { input: lengthInput });
     
     let length;
     
     // ✅ Handle validation errors (empty and zero) - these are HANDLED errors
     try {
+      // Add span for validation
+      addManualSpan('input_validation', { input });
+      logTraceEvent('input_validation_started', { input });
+      
       if (!input) {
         throw new Error('Please enter an array length');
       }
@@ -54,59 +92,114 @@ function MemoryCalculator() {
       if (length === 0n) {
         throw new Error('Array length cannot be zero');
       }
+      
+      logTraceEvent('input_validation_passed', { length: length.toString() });
     } catch (err) {
       console.error('Validation error:', err);
       setError(err.message);
+      
+      // Add error span
+      addManualSpan('validation_error', { error: err.message, input: lengthInput });
+      logTraceEvent('input_validation_failed', { error: err.message, input: lengthInput });
+      
       if (Sentry && Sentry.captureException) {
         Sentry.captureException(err, {
-          tags: { type: 'validation_error' },
+          tags: { type: 'validation_error', trace_id: getCurrentTraceId() },
           extra: { input: lengthInput }
         });
       }
       return;
     }
-
+    
     const lenNum = Number(length);
     
     try {
-      // ⚠️ This will throw RangeError for very large values (like 4294967296)
+      // Add span for array creation
+      const arraySpan = addManualSpan('array_creation', { length: lenNum });
+      logTraceEvent('array_creation_started', { length: lenNum });
+      
       const arr = new Array(lenNum);
       
-      // If we get here, allocation succeeded
+      logTraceEvent('array_created', { length: lenNum, success: true });
+      
+      // Add span for calculation
+      const calcSpan = addManualSpan('memory_calculation', { length: lenNum });
+      logTraceEvent('memory_calculation_started', { length: lenNum });
+      
       const bytes = bytesForArrayLength(length);
       const hr = humanReadable(bytes);
+      
+      logTraceEvent('memory_calculated', { 
+        bytes: bytes.toString(),
+        readable: `${hr.value} ${hr.unit}`
+      });
+      
+      // Add span for result processing
+      addManualSpan('result_processing', { 
+        bytes: bytes.toString(),
+        readable: `${hr.value} ${hr.unit}`
+      });
+      
+      const currentTraceId = getCurrentTraceId();
+      logTraceEvent('result_processing_started', { 
+        bytes: bytes.toString(),
+        readable: `${hr.value} ${hr.unit}`,
+        traceId: currentTraceId
+      });
+      
       setResult({
         length: lenNum,
         bytes: bytes,
         humanReadable: `${hr.value} ${hr.unit}`,
         hrValue: hr.value,
         hrUnit: hr.unit,
-        bits: bytes * 8n
+        bits: bytes * 8n,
+        traceId: currentTraceId
+      });
+      
+      logTraceEvent('calculation_completed', { 
+        length: lenNum,
+        bytes: bytes.toString(),
+        readable: `${hr.value} ${hr.unit}`,
+        traceId: currentTraceId
       });
       
       if (Sentry && Sentry.captureMessage) {
         Sentry.captureMessage("Array memory calculation completed", {
           level: 'info',
+          tags: { trace_id: currentTraceId },
           extra: {
             arrayLength: lenNum,
             memoryBytes: bytes.toString(),
-            memoryReadable: `${hr.value} ${hr.unit}`
+            memoryReadable: `${hr.value} ${hr.unit}`,
+            traceId: currentTraceId
           }
         });
       }
     } catch (err) {
       console.error('Array creation error:', err);
       
-      // Show error to user (like in the screenshot)
-      setError(`Error: ${err.message}`);
+      // Add error span
+      addManualSpan('calculation_error', { 
+        error: err.message, 
+        length: lenNum,
+        trace_id: getCurrentTraceId()
+      });
       
-      // ⚠️ Make it unhandled for Sentry by throwing it asynchronously
-      // This will crash the app after showing the error
+      const currentTraceId = getCurrentTraceId();
+      logTraceEvent('calculation_failed', { 
+        error: err.message, 
+        length: lenNum,
+        traceId: currentTraceId
+      });
+      
+      setError(`Error: ${err.message} (Trace ID: ${currentTraceId})`);
+      
       setTimeout(() => {
         throw err;
       }, 0);
     }
-  }, [lengthInput, bytesForArrayLength, humanReadable]);
+  }, [lengthInput, bytesForArrayLength, humanReadable, logTraceEvent]);
 
   const handleKeyUp = useCallback((event) => {
     if (event.key === "Enter") {
@@ -118,6 +211,7 @@ function MemoryCalculator() {
     setResult(null);
     setError('');
     setLengthInput('');
+    setTraceId('');
     inputRef.current?.focus();
   }, []);
 
@@ -125,7 +219,7 @@ function MemoryCalculator() {
     <div className="app">
       <header className="app-header">
         <h1>JavaScript Array Memory Usage (Estimated) Calculation</h1>
-        <p>Sentry: Capturing & Reporting (Handled + Unhandled) Issue</p>
+        <p>Sentry: Manual Tracing + Error Capture Demo</p>
         <div className="env-info">
           <strong>Sentry Status:</strong> {import.meta.env.VITE_SENTRY_DSN ? 'Active' : 'Not Configured'}
         </div>
@@ -170,13 +264,20 @@ function MemoryCalculator() {
                 <span className="unit-only">{result.hrUnit}</span>
               </div>
             </div>
+            
+            {traceId && (
+              <div className="trace-info">
+                <strong>Trace ID:</strong> {traceId}
+              </div>
+            )}
+            
             <div className="action-buttons">
               <button onClick={clearResults} className="btn btn-secondary">
                 Clear
               </button>
             </div>
           </div>
-        )}        
+        )}
         <div className="info-section">
           <h3>About this Calculator & Sentry Demo</h3>
           <ul>
@@ -184,17 +285,23 @@ function MemoryCalculator() {
             <li>Shows large values to human-readable format (KB, MB, GB, etc.)</li>
             <li><strong>Integer-only input:</strong> Only whole numbers are allowed</li>
             <li><strong>Test with 4294967296</strong> to trigger an unhandled RangeError that Sentry will capture</li>
+            <li><strong>Sentry Manual Tracing:</strong>
+              <ul>
+                <li>Each calculation creates a distributed trace with unique Trace ID</li>
+                <li>Spans track: Input Validation → Array Creation → Memory Calculation → Result Processing</li>
+                <li>Trace ID is displayed with results for correlation</li>
+                <li>Errors are tagged with Trace ID for debugging</li>
+              </ul>
+            </li>
             <li><strong>Sentry Error Tracking:</strong>
               <ul>
-                <li>Handled Errors: Empty and zero inputs are caught and logged without crashing</li>
-                <li>Unhandled Errors: RangeError from large arrays (like 4294967296) will show error message then crash and be captured by Sentry</li>
-                <li>Error Context: Sentry records input values, stack traces, and user actions</li>
+                <li>Handled Errors: Empty and zero inputs are caught and logged</li>
+                <li>Unhandled Errors: RangeError from large arrays will crash and be captured</li>
+                <li>Error Context: Sentry records input values, stack traces, and trace IDs</li>
                 <li>Real-time Monitoring: Errors appear in your Sentry dashboard immediately</li>
-                <li>Error Boundaries: React errors are gracefully handled with recovery options</li>
                 <li><strong>Deduplication:</strong> Reports 1st, 10th, 20th errors daily</li>
               </ul>
             </li>
-            {/* <li><strong>Current Status:</strong> {import.meta.env.VITE_SENTRY_DSN ? 'Sentry Active' : 'Sentry Not Configured'}</li> */}
           </ul>
         </div>
       </div>

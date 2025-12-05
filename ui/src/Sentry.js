@@ -50,28 +50,26 @@ const initSentry = () => {
     console.log("Sentry not initialized - no DSN provided");
     return;
   }
-
+  
   // ✅ Define Replay integration once
   const replay = Sentry.replayIntegration({
     maskAllText: false,   // show UI text
     maskAllInputs: true,  // keep PII masked
     blockAllMedia: true   // safer default
   });
-
+  
   const baseConfig = {
     dsn: import.meta.env.VITE_SENTRY_DSN,
     environment: import.meta.env.VITE_SENTRY_DIST,
     debug: false,
     release: `${import.meta.env.VITE_SENTRY_PROJECT}@${import.meta.env.VITE_RELEASE_NAME}`,
-
     // ✅ Performance monitoring
     tracesSampleRate: 1.0,   // capture 100% of transactions (adjust in production)
-
     // ✅ Replay sampling
     replaysSessionSampleRate: 1.0,   // capture all sessions
     replaysOnErrorSampleRate: 1.0,   // capture all sessions with errors
   };
-
+  
   if (import.meta.env.VITE_DEDUPE_STRATEGY === "custom") {
     baseConfig.integrations = (integrations) => {
       const filtered = integrations.filter(
@@ -84,15 +82,13 @@ const initSentry = () => {
       console.log("[Sentry] Using custom deduplication strategy + Replay + Performance");
       return filtered;
     };
-
+    
     baseConfig.beforeSend = (event) => {
       if (!event.exception?.values && !event.message) return event;
       const fingerprint = getErrorFingerprint(event);
       if (fingerprint === "unknown") return event;
-
       const shouldReport = shouldReportError(fingerprint);
       const currentCount = getErrorCount(fingerprint);
-
       if (!shouldReport) {
         const nextReportAt = Math.floor((currentCount - 1) / 10) * 10 + 11;
         console.log(
@@ -100,11 +96,9 @@ const initSentry = () => {
         );
         return null;
       }
-
       console.log(
         `[Sentry Custom Dedupe] Reporting "${fingerprint}" error #${currentCount} of the day`
       );
-
       event.extra = event.extra || {};
       event.extra.deduplication = {
         day: new Date().toISOString().split("T")[0],
@@ -122,11 +116,46 @@ const initSentry = () => {
     ];
     console.log("[Sentry] Using default deduplication + Replay + Performance");
   }
-
+  
   Sentry.init(baseConfig);
   console.log("Sentry initialized with DSN + Replay + Performance");
 };
 
 initSentry();
+
+// -----------------------------
+// Manual Tracing Helpers
+// -----------------------------
+export const startManualTrace = () => {
+  if (!Sentry || !Sentry.startSpan) return null;
+  
+  return Sentry.startSpan({
+    name: 'manual_calculation_trace',
+    op: 'manual.trace',
+  }, () => {
+    // This span will be active in the callback
+    return {
+      traceId: Sentry.getCurrentHub().getScope().getSpan()?.spanContext().traceId,
+      spanId: Sentry.getCurrentHub().getScope().getSpan()?.spanContext().spanId,
+    };
+  });
+};
+
+export const addManualSpan = (name, data = {}) => {
+  if (!Sentry || !Sentry.startSpan) return null;
+  
+  return Sentry.startSpan({
+    name,
+    op: 'manual.span',
+    data,
+  }, () => {
+    return Sentry.getCurrentHub().getScope().getSpan()?.spanContext();
+  });
+};
+
+export const getCurrentTraceId = () => {
+  return Sentry.getCurrentHub().getScope().getSpan()?.spanContext().traceId;
+};
+
 export { Sentry };
 export default Sentry;
