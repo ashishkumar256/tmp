@@ -262,4 +262,258 @@ body {
 /* Style for the unit to be right next to the number on the same line */
 .success-message .unit-only {
   color: #0f766e;
-  font-weight: 500
+  font-weight: 500;
+  font-size: 0.85rem;
+  margin-left: 0.25rem;
+}
+
+.success-message::before {
+  content: '✅';
+  font-size: 1rem;
+}
+
+/* Results Section - More compact */
+.result-section {
+  background: var(--card);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  margin: 1rem 0;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border);
+  display: flex; /* Make result section a flex container */
+  flex-direction: column;
+}
+
+/* Action Buttons - More compact */
+.action-buttons {
+  display: flex;
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+  justify-content: center;
+}
+
+.action-buttons .btn {
+  min-width: 90px;
+}
+
+/* 2. Updated: Clear button inside result section */
+.result-section .action-buttons {
+  margin: 1rem 0 0 0;
+  justify-content: flex-start; /* Align button to the left */
+}
+
+/* Info Section - Much more compact */
+.info-section {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+  box-shadow: var(--shadow-md);
+  max-width: 100%;
+}
+
+.info-section h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.info-section h3::before {
+  content: 'ℹ️';
+  font-size: 1rem;
+}
+
+.info-section ul {
+  padding-left: 1rem;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.info-section li {
+  margin-bottom: 0.5rem;
+}
+
+.info-section ul ul {
+  margin: 0.5rem 0;
+  padding-left: 1rem;
+}
+
+.info-section ul ul li {
+  margin-bottom: 0.25rem;
+  color: var(--text-tertiary);
+  font-size: 0.75rem;
+}
+
+/* Focus Styles */
+.btn:focus,
+.text-input:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Loading State */
+.calculating {
+  position: relative;
+  pointer-events: none;
+}
+
+.calculating::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  right: 0.75rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Trace Info Styles */
+.trace-info {
+  margin-top: 10px;
+  padding: 8px;
+  background-color: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  color: #0369a1;
+  font-family: monospace;
+  word-break: break-all;
+}
+
+.trace-info strong {
+  color: #0c4a6e;
+  margin-right: 5px;
+}
+
+/* Responsive Design - Optimized for no scrolling */
+@media (max-width: 768px) {
+  .calculator-container {
+    max-width: 100%;
+    padding: 0.75rem 1rem;
+  }
+  
+  .app-header {
+    padding: 0.75rem 1rem;
+  }
+  
+  .app-header h1 {
+    font-size: 1.1rem;
+  }
+  
+  .app-header p {
+    font-size: 0.85rem;
+  }
+  
+  .input-group {
+    flex-direction: column;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+    align-items: center;
+    margin: 1rem 0;
+  }
+  
+  .action-buttons .btn {
+    width: 100%;
+    max-width: 180px;
+  }
+  
+  .info-section {
+    padding: 1.25rem;
+    margin-top: 1rem;
+  }
+  
+  .input-section,
+  .result-section {
+    padding: 1rem;
+  }
+  
+  /* Clear button inside result section on mobile */
+  .result-section .action-buttons {
+    margin: 1rem 0 0 0;
+    justify-content: flex-start;
+  }
+  
+  /* Trace info on mobile */
+  .trace-info {
+    font-size: 0.7rem;
+    padding: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .calculator-container {
+    padding: 0.5rem 0.75rem;
+  }
+  
+  .app-header {
+    padding: 0.5rem 0.75rem;
+  }
+  
+  .btn {
+    padding: 0.625rem 1rem;
+  }
+  
+  .text-input {
+    padding: 0.625rem;
+  }
+  
+  .info-section {
+    padding: 1rem;
+  }
+  
+  .info-section ul {
+    font-size: 0.75rem;
+  }
+  
+  /* Success message adjustment for tiny screens */
+  .success-message {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+  }
+  
+  .success-message::before {
+    margin-bottom: 0.5rem;
+  }
+  
+  .success-message .result-value {
+    margin-top: 0.25rem;
+  }
+  
+  /* Trace info on very small screens */
+  .trace-info {
+    font-size: 0.65rem;
+    padding: 4px;
+  }
+}
+
+/* Ensure no vertical scrolling on most screens */
+@media (max-height: 800px) {
+  .calculator-container {
+    padding: 0.5rem 1.5rem;
+  }
+  
+  .app-header {
+    padding: 0.75rem 1.5rem;
+  }
+  
+  .info-section {
+    margin-top: 1rem;
+    padding: 1rem;
+  }
+}
