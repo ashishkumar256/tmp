@@ -1,3 +1,4 @@
+// src/App.jsx
 import React, { useState, useCallback, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
 import { Sentry } from './Sentry';
@@ -64,31 +65,54 @@ function MemoryCalculator() {
       return;
     }
 
-    // ❗ RangeError from this line is unhandled
     const lenNum = Number(length);
-    const arr = new Array(lenNum);
-    const bytes = bytesForArrayLength(length);
 
-    // Get human-readable object {value, unit}
-    const hr = humanReadable(bytes);
-    setResult({
-      length: lenNum,
-      bytes: bytes,
-      humanReadable: `${hr.value} ${hr.unit}`,
-      hrValue: hr.value,
-      hrUnit: hr.unit,
-      bits: bytes * 8n
-    });
+    // ✅ Guard against RangeError
+    if (Number.isSafeInteger(lenNum) && lenNum > 0 && lenNum < 1e7) {
+      try {
+        const arr = new Array(lenNum); // safe allocation
+        const bytes = bytesForArrayLength(length);
 
-    if (Sentry && Sentry.captureMessage) {
-      Sentry.captureMessage("Array memory calculation completed", {
-        level: 'info',
-        extra: {
-          arrayLength: lenNum,
-          memoryBytes: bytes.toString(),
-          memoryReadable: `${hr.value} ${hr.unit}`
+        const hr = humanReadable(bytes);
+        setResult({
+          length: lenNum,
+          bytes: bytes,
+          humanReadable: `${hr.value} ${hr.unit}`,
+          hrValue: hr.value,
+          hrUnit: hr.unit,
+          bits: bytes * 8n
+        });
+
+        if (Sentry && Sentry.captureMessage) {
+          Sentry.captureMessage("Array memory calculation completed", {
+            level: 'info',
+            extra: {
+              arrayLength: lenNum,
+              memoryBytes: bytes.toString(),
+              memoryReadable: `${hr.value} ${hr.unit}`
+            }
+          });
         }
-      });
+      } catch (err) {
+        console.error('RangeError:', err);
+        setError(`RangeError: Input too large. This is a system limitation.`);
+        if (Sentry && Sentry.captureException) {
+          Sentry.captureException(err, {
+            tags: { type: 'range_error' },
+            extra: { input: lengthInput }
+          });
+        }
+      }
+    } else {
+      // ❗ Explicitly handle unsafe lengths
+      const errMsg = `RangeError: Array length ${lenNum.toLocaleString()} is too large. This is a system limitation.`;
+      setError(errMsg);
+      if (Sentry && Sentry.captureException) {
+        Sentry.captureException(new RangeError(errMsg), {
+          tags: { type: 'range_error' },
+          extra: { input: lengthInput }
+        });
+      }
     }
   }, [lengthInput, bytesForArrayLength, humanReadable]);
 
@@ -172,7 +196,7 @@ function MemoryCalculator() {
             <li><strong>Sentry Error Tracking:</strong>
               <ul>
                 <li>Handled Errors: Empty and zero inputs are caught and logged without crashing</li>
-                <li>Unhandled Errors: Very large array lengths trigger RangeError and crash the component</li>
+                <li>RangeError: Very large array lengths are caught and shown as system limitations</li>
                 <li>Error Context: Sentry records input values, stack traces, and user actions</li>
                 <li>Real-time Monitoring: Errors appear in your Sentry dashboard immediately</li>
                 <li>Error Boundaries: React errors are gracefully handled with recovery options</li>
