@@ -124,46 +124,50 @@ const initSentry = () => {
 initSentry();
 
 // -----------------------------
-// Manual Tracing Helpers - Simplified
+// Manual Tracing Helpers - SIMPLIFIED
 // -----------------------------
-export const startManualTrace = (traceName = 'array_memory_calculation') => {
+export const startManualTrace = () => {
   if (!Sentry || !Sentry.startSpan) return null;
   
-  // Start a simple span directly - no intermediate wrapper
-  const span = Sentry.startSpan({
-    name: traceName,
+  // Get the current active span (if any)
+  const currentSpan = Sentry.getCurrentHub().getScope().getSpan();
+  
+  // Create a new span/transaction for the calculation
+  const transaction = Sentry.startTransaction({
+    name: 'array_memory_calculation',
     op: 'task',
   });
   
-  Sentry.getCurrentHub().configureScope(scope => scope.setSpan(span));
+  // Set it as the active span
+  Sentry.getCurrentHub().configureScope(scope => scope.setSpan(transaction));
   
   return {
-    span,
-    traceId: span.spanContext().traceId,
-    spanId: span.spanContext().spanId,
+    transaction,
+    traceId: transaction.spanContext().traceId,
+    spanId: transaction.spanContext().spanId,
   };
 };
 
 export const addManualSpan = (name, data = {}, op = 'task') => {
   if (!Sentry || !Sentry.startSpan) return null;
   
+  // Create a child span under the current active span
   return Sentry.startSpan({
     name,
     op,
     data,
-  }, () => {
-    return Sentry.getCurrentHub().getScope().getSpan()?.spanContext();
   });
 };
 
-export const finishManualTrace = (span) => {
-  if (span && span.finish) {
-    span.finish();
+export const finishManualTrace = (transaction) => {
+  if (transaction && transaction.finish) {
+    transaction.finish();
   }
 };
 
 export const getCurrentTraceId = () => {
-  return Sentry.getCurrentHub().getScope().getSpan()?.spanContext().traceId;
+  const span = Sentry.getCurrentHub().getScope().getSpan();
+  return span?.spanContext().traceId;
 };
 
 export { Sentry };
