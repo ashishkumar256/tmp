@@ -1,7 +1,7 @@
 // src/App.jsx
 import React, { useState, useCallback, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
-import { Sentry, startManualTrace, addManualSpan, getCurrentTraceId } from './Sentry';
+import { Sentry, startManualTrace, addManualSpan, finishManualTrace, getCurrentTraceId } from './Sentry';
 import ErrorBoundary from './ErrorBoundary';
 import './App.css';
 
@@ -9,7 +9,6 @@ function MemoryCalculator() {
   const [lengthInput, setLengthInput] = useState('');
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
-  const [traceId, setTraceId] = useState('');
   const inputRef = useRef(null);
   
   // Debug logging helper
@@ -66,13 +65,11 @@ function MemoryCalculator() {
     const input = lengthInput.trim();
     setResult(null);
     setError('');
-    setTraceId('');
     
     // Start manual trace
-    const traceResult = startManualTrace();
-    if (traceResult) {
-      setTraceId(traceResult.traceId);
-      console.log(`[Manual Trace] Started trace: ${traceResult.traceId}`);
+    const trace = startManualTrace();
+    if (trace) {
+      console.log(`[Manual Trace] Started trace: ${trace.traceId}`);
     }
     
     logTraceEvent('calculation_started', { input: lengthInput });
@@ -81,8 +78,8 @@ function MemoryCalculator() {
     
     // ✅ Handle validation errors
     try {
-      // Add span for validation - spans automatically finish when callback returns
-      addManualSpan('input_validation', { input }, 'validation');
+      // Add span for validation
+      const validationSpan = addManualSpan('input_validation', { input }, 'validation');
       logTraceEvent('input_validation_started', { input });
       
       if (!input) {
@@ -94,15 +91,25 @@ function MemoryCalculator() {
       }
       
       logTraceEvent('input_validation_passed', { length: length.toString() });
+      
+      // Finish validation span
+      if (validationSpan && validationSpan.finish) {
+        validationSpan.finish();
+      }
     } catch (err) {
       console.error('Validation error:', err);
       setError(err.message);
       
       logTraceEvent('input_validation_failed', { error: err.message, input: lengthInput });
       
+      // Finish the main trace
+      if (trace && trace.transaction) {
+        finishManualTrace(trace.transaction);
+      }
+      
       if (Sentry && Sentry.captureException) {
         Sentry.captureException(err, {
-          tags: { type: 'validation_error', trace_id: traceResult?.traceId },
+          tags: { type: 'validation_error' },
           extra: { input: lengthInput }
         });
       }
@@ -113,14 +120,19 @@ function MemoryCalculator() {
     
     try {
       // Add span for array creation
-      addManualSpan('array_creation', { length: lenNum }, 'process');
+      const arraySpan = addManualSpan('array_creation', { length: lenNum }, 'process');
       logTraceEvent('array_creation_started', { length: lenNum });
       
       const arr = new Array(lenNum);
       logTraceEvent('array_created', { length: lenNum, success: true });
       
+      // Finish array creation span
+      if (arraySpan && arraySpan.finish) {
+        arraySpan.finish();
+      }
+      
       // Add span for calculation
-      addManualSpan('memory_calculation', { length: lenNum }, 'compute');
+      const calcSpan = addManualSpan('memory_calculation', { length: lenNum }, 'compute');
       logTraceEvent('memory_calculation_started', { length: lenNum });
       
       const bytes = bytesForArrayLength(length);
@@ -131,13 +143,18 @@ function MemoryCalculator() {
         readable: `${hr.value} ${hr.unit}`
       });
       
+      // Finish calculation span
+      if (calcSpan && calcSpan.finish) {
+        calcSpan.finish();
+      }
+      
       // Add span for result processing
-      addManualSpan('result_processing', { 
+      const resultSpan = addManualSpan('result_processing', { 
         bytes: bytes.toString(),
         readable: `${hr.value} ${hr.unit}`
       }, 'process');
       
-      const currentTraceId = traceResult?.traceId || getCurrentTraceId();
+      const currentTraceId = trace?.traceId || getCurrentTraceId();
       logTraceEvent('result_processing_started', { 
         bytes: bytes.toString(),
         readable: `${hr.value} ${hr.unit}`,
@@ -161,6 +178,16 @@ function MemoryCalculator() {
         traceId: currentTraceId
       });
       
+      // Finish result processing span
+      if (resultSpan && resultSpan.finish) {
+        resultSpan.finish();
+      }
+      
+      // Finish the main trace
+      if (trace && trace.transaction) {
+        finishManualTrace(trace.transaction);
+      }
+      
       if (Sentry && Sentry.captureMessage) {
         Sentry.captureMessage("Array memory calculation completed", {
           level: 'info',
@@ -176,12 +203,17 @@ function MemoryCalculator() {
     } catch (err) {
       console.error('Array creation error:', err);
       
-      const currentTraceId = traceResult?.traceId || getCurrentTraceId();
+      const currentTraceId = trace?.traceId || getCurrentTraceId();
       logTraceEvent('calculation_failed', { 
         error: err.message, 
         length: lenNum,
         traceId: currentTraceId
       });
+      
+      // Finish the trace
+      if (trace && trace.transaction) {
+        finishManualTrace(trace.transaction);
+      }
       
       setError(`Error: ${err.message} (Trace ID: ${currentTraceId})`);
       
@@ -198,12 +230,20 @@ function MemoryCalculator() {
   }, [processCalculate]);
 
   const clearResults = useCallback(() => {
+    // Simple clear action with minimal tracing
+    logTraceEvent('clear_action_started', {
+      hadResult: !!result,
+      hadError: !!error,
+      currentInput: lengthInput
+    });
+    
     setResult(null);
     setError('');
     setLengthInput('');
-    setTraceId('');
     inputRef.current?.focus();
-  }, []);
+    
+    logTraceEvent('clear_action_completed');
+  }, [result, error, lengthInput, logTraceEvent]);
 
   return (
     <div className="app">
@@ -255,9 +295,9 @@ function MemoryCalculator() {
               </div>
             </div>
             
-            {traceId && (
+            {result.traceId && (
               <div className="trace-info">
-                <strong>Trace ID:</strong> {traceId}
+                <strong>Trace ID:</strong> {result.traceId}
               </div>
             )}
             
@@ -282,6 +322,7 @@ function MemoryCalculator() {
                 <li>Trace ID is displayed with results for correlation</li>
                 <li>Errors are tagged with Trace ID for debugging</li>
                 <li><strong>Clean Structure:</strong> No unnecessary intermediate spans</li>
+                <li><strong>Clear Button Tracing:</strong> Tracks user-initiated clear actions with context</li>
               </ul>
             </li>
             <li><strong>Sentry Error Tracking:</strong>

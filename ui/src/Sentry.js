@@ -124,52 +124,48 @@ const initSentry = () => {
 initSentry();
 
 // -----------------------------
-// Manual Tracing Helpers - FIXED VERSION
+// Manual Tracing Helpers
 // -----------------------------
 export const startManualTrace = () => {
-  if (!Sentry || !Sentry.startSpan) return null;
+  if (!Sentry || !Sentry.startTransaction) return null;
   
-  // Use startSpan with a callback function
-  return Sentry.startSpan({
-    name: 'array_memory_calculation',
+  // Create the main transaction
+  const transaction = Sentry.startTransaction({
+    name: 'span_initiation',
     op: 'task',
-  }, () => {
-    // This callback runs with the span active
-    const span = Sentry.getCurrentHub().getScope().getSpan();
-    if (!span) return null;
-    
-    return {
-      span,
-      traceId: span.spanContext().traceId,
-      spanId: span.spanContext().spanId,
-    };
   });
+  
+  // Set it as active
+  Sentry.getCurrentHub().configureScope(scope => scope.setSpan(transaction));
+  
+  return {
+    transaction,
+    traceId: transaction.spanContext().traceId,
+    spanId: transaction.spanContext().spanId,
+  };
 };
 
 export const addManualSpan = (name, data = {}, op = 'task') => {
-  if (!Sentry || !Sentry.startSpan) return null;
+  const parentSpan = Sentry.getCurrentHub().getScope().getSpan();
   
-  // Create a child span with a callback
-  return Sentry.startSpan({
-    name,
+  if (!parentSpan) {
+    console.warn('No parent span found for', name);
+    return null;
+  }
+  
+  // Create a child span under the current parent
+  const childSpan = parentSpan.startChild({
+    description: name,
     op,
     data,
-  }, () => {
-    // This callback runs with the span active
-    const span = Sentry.getCurrentHub().getScope().getSpan();
-    if (!span) return null;
-    
-    return {
-      span,
-      traceId: span.spanContext().traceId,
-      spanId: span.spanContext().spanId,
-    };
   });
+  
+  return childSpan;
 };
 
-export const finishManualTrace = (span) => {
-  if (span && span.finish) {
-    span.finish();
+export const finishManualTrace = (transaction) => {
+  if (transaction && transaction.finish) {
+    transaction.finish();
   }
 };
 
