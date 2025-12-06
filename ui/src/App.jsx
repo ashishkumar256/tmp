@@ -259,11 +259,11 @@ function MemoryCalculator() {
               </div>
             </div>
             
-            {result.traceId && (
+            {/* {result.traceId && (
               <div className="trace-info">
                 <strong>Trace ID:</strong> {result.traceId}
               </div>
-            )}
+            )} */}
             
             <div className="action-buttons">
               <button onClick={clearResults} className="btn btn-secondary">
