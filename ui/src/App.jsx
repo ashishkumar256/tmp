@@ -1,7 +1,7 @@
 // src/App.jsx
 import React, { useState, useCallback, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
-import { Sentry, startManualTrace, addManualSpan, getCurrentTraceId } from './Sentry';
+import { Sentry, startManualTrace, addManualSpan, finishManualTrace, getCurrentTraceId } from './Sentry';
 import ErrorBoundary from './ErrorBoundary';
 import './App.css';
 
@@ -68,11 +68,11 @@ function MemoryCalculator() {
     setError('');
     setTraceId('');
     
-    // Start manual trace
-    const traceResult = startManualTrace();
-    if (traceResult) {
-      setTraceId(traceResult.traceId);
-      console.log(`[Manual Trace] Started trace: ${traceResult.traceId}`);
+    // Start manual trace without intermediate span
+    const trace = startManualTrace('array_memory_calculation');
+    if (trace) {
+      setTraceId(trace.traceId);
+      console.log(`[Manual Trace] Started trace: ${trace.traceId}`);
     }
     
     logTraceEvent('calculation_started', { input: lengthInput });
@@ -82,7 +82,7 @@ function MemoryCalculator() {
     // ✅ Handle validation errors (empty and zero) - these are HANDLED errors
     try {
       // Add span for validation
-      addManualSpan('input_validation', { input });
+      addManualSpan('input_validation', { input }, 'validation');
       logTraceEvent('input_validation_started', { input });
       
       if (!input) {
@@ -99,12 +99,17 @@ function MemoryCalculator() {
       setError(err.message);
       
       // Add error span
-      addManualSpan('validation_error', { error: err.message, input: lengthInput });
+      addManualSpan('validation_error', { error: err.message, input: lengthInput }, 'error');
       logTraceEvent('input_validation_failed', { error: err.message, input: lengthInput });
+      
+      // Finish the trace
+      if (trace && trace.span) {
+        finishManualTrace(trace.span);
+      }
       
       if (Sentry && Sentry.captureException) {
         Sentry.captureException(err, {
-          tags: { type: 'validation_error', trace_id: getCurrentTraceId() },
+          tags: { type: 'validation_error', trace_id: trace?.traceId },
           extra: { input: lengthInput }
         });
       }
@@ -115,15 +120,14 @@ function MemoryCalculator() {
     
     try {
       // Add span for array creation
-      const arraySpan = addManualSpan('array_creation', { length: lenNum });
+      addManualSpan('array_creation', { length: lenNum }, 'process');
       logTraceEvent('array_creation_started', { length: lenNum });
       
       const arr = new Array(lenNum);
-      
       logTraceEvent('array_created', { length: lenNum, success: true });
       
       // Add span for calculation
-      const calcSpan = addManualSpan('memory_calculation', { length: lenNum });
+      addManualSpan('memory_calculation', { length: lenNum }, 'compute');
       logTraceEvent('memory_calculation_started', { length: lenNum });
       
       const bytes = bytesForArrayLength(length);
@@ -138,9 +142,9 @@ function MemoryCalculator() {
       addManualSpan('result_processing', { 
         bytes: bytes.toString(),
         readable: `${hr.value} ${hr.unit}`
-      });
+      }, 'process');
       
-      const currentTraceId = getCurrentTraceId();
+      const currentTraceId = trace?.traceId || getCurrentTraceId();
       logTraceEvent('result_processing_started', { 
         bytes: bytes.toString(),
         readable: `${hr.value} ${hr.unit}`,
@@ -164,6 +168,11 @@ function MemoryCalculator() {
         traceId: currentTraceId
       });
       
+      // Finish the trace
+      if (trace && trace.span) {
+        finishManualTrace(trace.span);
+      }
+      
       if (Sentry && Sentry.captureMessage) {
         Sentry.captureMessage("Array memory calculation completed", {
           level: 'info',
@@ -183,15 +192,20 @@ function MemoryCalculator() {
       addManualSpan('calculation_error', { 
         error: err.message, 
         length: lenNum,
-        trace_id: getCurrentTraceId()
-      });
+        trace_id: trace?.traceId
+      }, 'error');
       
-      const currentTraceId = getCurrentTraceId();
+      const currentTraceId = trace?.traceId || getCurrentTraceId();
       logTraceEvent('calculation_failed', { 
         error: err.message, 
         length: lenNum,
         traceId: currentTraceId
       });
+      
+      // Finish the trace
+      if (trace && trace.span) {
+        finishManualTrace(trace.span);
+      }
       
       setError(`Error: ${err.message} (Trace ID: ${currentTraceId})`);
       
@@ -291,6 +305,7 @@ function MemoryCalculator() {
                 <li>Spans track: Input Validation → Array Creation → Memory Calculation → Result Processing</li>
                 <li>Trace ID is displayed with results for correlation</li>
                 <li>Errors are tagged with Trace ID for debugging</li>
+                <li><strong>Simplified Tracing:</strong> No intermediate spans - cleaner trace view</li>
               </ul>
             </li>
             <li><strong>Sentry Error Tracking:</strong>
