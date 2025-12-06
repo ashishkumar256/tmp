@@ -132,7 +132,7 @@ export const startManualTrace = () => {
   // Create the main transaction
   const transaction = Sentry.startTransaction({
     name: 'span_initiation',
-    op: 'task',
+    op: 'manual.task',
   });
   
   // Set it as active
@@ -145,7 +145,7 @@ export const startManualTrace = () => {
   };
 };
 
-export const addManualSpan = (name, data = {}, op = 'task') => {
+export const addManualSpan = (name, data = {}, op = 'manual.task') => {
   const parentSpan = Sentry.getCurrentHub().getScope().getSpan();
   
   if (!parentSpan) {
