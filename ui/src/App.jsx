@@ -1,7 +1,7 @@
 // src/App.jsx
 import React, { useState, useCallback, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
-import { Sentry, startManualTrace, addManualSpan, finishManualTrace, getCurrentTraceId } from './Sentry';
+import { Sentry, startManualTrace, addManualSpan, getCurrentTraceId } from './Sentry';
 import ErrorBoundary from './ErrorBoundary';
 import './App.css';
 
@@ -68,11 +68,11 @@ function MemoryCalculator() {
     setError('');
     setTraceId('');
     
-    // Start manual trace WITHOUT intermediate span
-    const trace = startManualTrace();
-    if (trace) {
-      setTraceId(trace.traceId);
-      console.log(`[Manual Trace] Started trace: ${trace.traceId}`);
+    // Start manual trace
+    const traceResult = startManualTrace();
+    if (traceResult) {
+      setTraceId(traceResult.traceId);
+      console.log(`[Manual Trace] Started trace: ${traceResult.traceId}`);
     }
     
     logTraceEvent('calculation_started', { input: lengthInput });
@@ -81,8 +81,8 @@ function MemoryCalculator() {
     
     // ✅ Handle validation errors
     try {
-      // Add span for validation (no intermediate wrapper)
-      const validationSpan = addManualSpan('input_validation', { input }, 'validation');
+      // Add span for validation - spans automatically finish when callback returns
+      addManualSpan('input_validation', { input }, 'validation');
       logTraceEvent('input_validation_started', { input });
       
       if (!input) {
@@ -94,25 +94,15 @@ function MemoryCalculator() {
       }
       
       logTraceEvent('input_validation_passed', { length: length.toString() });
-      
-      // Finish the validation span
-      if (validationSpan && validationSpan.finish) {
-        validationSpan.finish();
-      }
     } catch (err) {
       console.error('Validation error:', err);
       setError(err.message);
       
       logTraceEvent('input_validation_failed', { error: err.message, input: lengthInput });
       
-      // Finish the trace
-      if (trace && trace.transaction) {
-        finishManualTrace(trace.transaction);
-      }
-      
       if (Sentry && Sentry.captureException) {
         Sentry.captureException(err, {
-          tags: { type: 'validation_error', trace_id: trace?.traceId },
+          tags: { type: 'validation_error', trace_id: traceResult?.traceId },
           extra: { input: lengthInput }
         });
       }
@@ -123,19 +113,14 @@ function MemoryCalculator() {
     
     try {
       // Add span for array creation
-      const arraySpan = addManualSpan('array_creation', { length: lenNum }, 'process');
+      addManualSpan('array_creation', { length: lenNum }, 'process');
       logTraceEvent('array_creation_started', { length: lenNum });
       
       const arr = new Array(lenNum);
       logTraceEvent('array_created', { length: lenNum, success: true });
       
-      // Finish array creation span
-      if (arraySpan && arraySpan.finish) {
-        arraySpan.finish();
-      }
-      
       // Add span for calculation
-      const calcSpan = addManualSpan('memory_calculation', { length: lenNum }, 'compute');
+      addManualSpan('memory_calculation', { length: lenNum }, 'compute');
       logTraceEvent('memory_calculation_started', { length: lenNum });
       
       const bytes = bytesForArrayLength(length);
@@ -146,18 +131,13 @@ function MemoryCalculator() {
         readable: `${hr.value} ${hr.unit}`
       });
       
-      // Finish calculation span
-      if (calcSpan && calcSpan.finish) {
-        calcSpan.finish();
-      }
-      
       // Add span for result processing
-      const resultSpan = addManualSpan('result_processing', { 
+      addManualSpan('result_processing', { 
         bytes: bytes.toString(),
         readable: `${hr.value} ${hr.unit}`
       }, 'process');
       
-      const currentTraceId = trace?.traceId || getCurrentTraceId();
+      const currentTraceId = traceResult?.traceId || getCurrentTraceId();
       logTraceEvent('result_processing_started', { 
         bytes: bytes.toString(),
         readable: `${hr.value} ${hr.unit}`,
@@ -181,16 +161,6 @@ function MemoryCalculator() {
         traceId: currentTraceId
       });
       
-      // Finish result processing span
-      if (resultSpan && resultSpan.finish) {
-        resultSpan.finish();
-      }
-      
-      // Finish the main trace
-      if (trace && trace.transaction) {
-        finishManualTrace(trace.transaction);
-      }
-      
       if (Sentry && Sentry.captureMessage) {
         Sentry.captureMessage("Array memory calculation completed", {
           level: 'info',
@@ -206,17 +176,12 @@ function MemoryCalculator() {
     } catch (err) {
       console.error('Array creation error:', err);
       
-      const currentTraceId = trace?.traceId || getCurrentTraceId();
+      const currentTraceId = traceResult?.traceId || getCurrentTraceId();
       logTraceEvent('calculation_failed', { 
         error: err.message, 
         length: lenNum,
         traceId: currentTraceId
       });
-      
-      // Finish the trace
-      if (trace && trace.transaction) {
-        finishManualTrace(trace.transaction);
-      }
       
       setError(`Error: ${err.message} (Trace ID: ${currentTraceId})`);
       
