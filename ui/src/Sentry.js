@@ -1,7 +1,7 @@
 // src/Sentry.js
 import * as Sentry from "@sentry/react";
-import { BrowserTracing } from "@sentry/react";   // ✅ Performance monitoring
-import "@sentry/replay";   // ✅ Required for Replay
+import { browserTracingIntegration } from "@sentry/react";
+import { replayIntegration } from "@sentry/replay";
 
 // -----------------------------
 // Deduplication helpers
@@ -51,37 +51,29 @@ const initSentry = () => {
     return;
   }
   
-  // ✅ Define Replay integration once
-  const replay = Sentry.replayIntegration({
-    maskAllText: false,   // show UI text
-    maskAllInputs: true,  // keep PII masked
-    blockAllMedia: true   // safer default
-  });
-  
   const baseConfig = {
     dsn: import.meta.env.VITE_SENTRY_DSN,
     environment: import.meta.env.VITE_SENTRY_DIST,
     debug: false,
     release: `${import.meta.env.VITE_SENTRY_PROJECT}@${import.meta.env.VITE_RELEASE_NAME}`,
     // ✅ Performance monitoring
-    tracesSampleRate: 1.0,   // capture 100% of transactions (adjust in production)
+    tracesSampleRate: 1.0,
     // ✅ Replay sampling
-    replaysSessionSampleRate: 1.0,   // capture all sessions
-    replaysOnErrorSampleRate: 1.0,   // capture all sessions with errors
+    replaysSessionSampleRate: 1.0,
+    replaysOnErrorSampleRate: 1.0,
+    // ✅ Auto-instrumentation
+    integrations: [
+      browserTracingIntegration(),
+      replayIntegration({
+        maskAllText: false,
+        maskAllInputs: true,
+        blockAllMedia: true
+      })
+    ],
   };
   
   if (import.meta.env.VITE_DEDUPE_STRATEGY === "custom") {
-    baseConfig.integrations = (integrations) => {
-      const filtered = integrations.filter(
-        (integration) => integration.name !== "Dedupe"
-      );
-      filtered.push(
-        new BrowserTracing(),  // ✅ add performance monitoring
-        replay                 // ✅ add Replay
-      );
-      console.log("[Sentry] Using custom deduplication strategy + Replay + Performance");
-      return filtered;
-    };
+    console.log("[Sentry] Using custom deduplication strategy + Replay + Performance");
     
     baseConfig.beforeSend = (event) => {
       if (!event.exception?.values && !event.message) return event;
@@ -109,11 +101,6 @@ const initSentry = () => {
       return event;
     };
   } else {
-    baseConfig.integrations = [
-      ...Sentry.defaultIntegrations,
-      new BrowserTracing(),  // ✅ add performance monitoring
-      replay                 // ✅ add Replay
-    ];
     console.log("[Sentry] Using default deduplication + Replay + Performance");
   }
   
@@ -124,54 +111,79 @@ const initSentry = () => {
 initSentry();
 
 // -----------------------------
-// Manual Tracing Helpers
+// Manual Tracing Helpers (Updated for Transactions)
 // -----------------------------
-export const startManualTrace = () => {
-  if (!Sentry || !Sentry.startTransaction) return null;
+export const startTransaction = (name, attributes = {}) => {
+  if (!Sentry || !Sentry.startSpan) return null;
   
-  // Create the main transaction
-  const transaction = Sentry.startTransaction({
-    name: 'span_initiation',
-    op: 'task',
+  const transaction = Sentry.startSpan({
+    name,
+    op: 'transaction',
+    attributes: {
+      ...attributes,
+      startTime: Date.now(),
+    }
   });
-  
-  // Set it as active
-  Sentry.getCurrentHub().configureScope(scope => scope.setSpan(transaction));
   
   return {
     transaction,
-    traceId: transaction.spanContext().traceId,
-    spanId: transaction.spanContext().spanId,
+    traceId: transaction?.spanContext()?.traceId,
+    spanId: transaction?.spanContext()?.spanId,
+    startSpan: (spanName, spanAttributes = {}, spanOp = 'task') => {
+      if (!transaction) return null;
+      return Sentry.startSpan({
+        name: spanName,
+        op: spanOp,
+        attributes: spanAttributes,
+      });
+    },
+    end: () => {
+      if (transaction?.end) {
+        transaction.end();
+        console.log(`[Transaction Ended] ${name}`);
+      }
+    }
   };
 };
 
-export const addManualSpan = (name, data = {}, op = 'task') => {
-  const parentSpan = Sentry.getCurrentHub().getScope().getSpan();
+export const startSpan = (name, attributes = {}, op = 'task') => {
+  if (!Sentry || !Sentry.startSpan) return null;
   
-  if (!parentSpan) {
-    console.warn('No parent span found for', name);
-    return null;
-  }
-  
-  // Create a child span under the current parent
-  const childSpan = parentSpan.startChild({
-    description: name,
+  return Sentry.startSpan({
+    name,
     op,
-    data,
+    attributes,
   });
-  
-  return childSpan;
 };
 
-export const finishManualTrace = (transaction) => {
-  if (transaction && transaction.finish) {
-    transaction.finish();
+export const endSpan = (span) => {
+  if (span && span.end) {
+    span.end();
   }
 };
 
 export const getCurrentTraceId = () => {
   const span = Sentry.getCurrentHub().getScope().getSpan();
   return span?.spanContext().traceId;
+};
+
+export const captureMessageWithTrace = (message, level = 'info', extra = {}) => {
+  const traceId = getCurrentTraceId();
+  if (Sentry && Sentry.captureMessage) {
+    Sentry.captureMessage(message, {
+      level,
+      tags: { 
+        trace_id: traceId,
+        ...extra.tags
+      },
+      extra: {
+        ...extra,
+        traceId,
+        timestamp: new Date().toISOString()
+      }
+    });
+  }
+  return traceId;
 };
 
 export { Sentry };
