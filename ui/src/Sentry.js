@@ -116,26 +116,41 @@ initSentry();
 export const startTransaction = (name, attributes = {}) => {
   if (!Sentry || !Sentry.startSpan) return null;
   
-  const transaction = Sentry.startSpan({
+  let transaction = null;
+  let traceId = null;
+  let spanId = null;
+  
+  // startSpan expects a callback function
+  Sentry.startSpan({
     name,
     op: 'transaction',
     attributes: {
       ...attributes,
       startTime: Date.now(),
     }
+  }, (span) => {
+    transaction = span;
+    traceId = span?.spanContext()?.traceId;
+    spanId = span?.spanContext()?.spanId;
   });
   
   return {
     transaction,
-    traceId: transaction?.spanContext()?.traceId,
-    spanId: transaction?.spanContext()?.spanId,
+    traceId,
+    spanId,
     startSpan: (spanName, spanAttributes = {}, spanOp = 'task') => {
       if (!transaction) return null;
-      return Sentry.startSpan({
+      
+      let childSpan = null;
+      Sentry.startSpan({
         name: spanName,
         op: spanOp,
         attributes: spanAttributes,
+      }, (span) => {
+        childSpan = span;
       });
+      
+      return childSpan;
     },
     end: () => {
       if (transaction?.end) {
@@ -149,11 +164,16 @@ export const startTransaction = (name, attributes = {}) => {
 export const startSpan = (name, attributes = {}, op = 'task') => {
   if (!Sentry || !Sentry.startSpan) return null;
   
-  return Sentry.startSpan({
+  let span = null;
+  Sentry.startSpan({
     name,
     op,
     attributes,
+  }, (createdSpan) => {
+    span = createdSpan;
   });
+  
+  return span;
 };
 
 export const endSpan = (span) => {
