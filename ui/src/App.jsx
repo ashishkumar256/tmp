@@ -42,7 +42,7 @@ function MemoryCalculator() {
     setResult(null);
     setError('');
     
-    const trace = startManualTrace('array_memory_calculation', 'manual.task');
+    const trace = startManualTrace('array_memory_calculation', 'task');
     if (trace) {
       console.log(`[Trace Started] ID: ${trace.traceId}`);
     }
@@ -50,7 +50,7 @@ function MemoryCalculator() {
     let length;
     
     try {
-      const validationSpan = addManualSpan('input_validation', { input }, 'manual.validation');
+      const validationSpan = addManualSpan('input_validation', { input }, 'validation');
       
       if (!input) {
         throw new Error('Please enter an array length');
@@ -82,14 +82,14 @@ function MemoryCalculator() {
     const lenNum = Number(length);
     
     try {
-      const arraySpan = addManualSpan('array_creation', { length: lenNum }, 'manual.process');
+      const arraySpan = addManualSpan('array_creation', { length: lenNum }, 'process');
       const arr = new Array(lenNum);
       
       if (arraySpan && arraySpan.finish) {
         arraySpan.finish();
       }
       
-      const calcSpan = addManualSpan('memory_calculation', { length: lenNum }, 'manual.compute');
+      const calcSpan = addManualSpan('memory_calculation', { length: lenNum }, 'compute');
       const bytes = bytesForArrayLength(length);
       const hr = humanReadable(bytes);
       
@@ -100,7 +100,7 @@ function MemoryCalculator() {
       const resultSpan = addManualSpan('result_processing', { 
         bytes: bytes.toString(),
         readable: `${hr.value} ${hr.unit}`
-      }, 'manual.process');
+      }, 'process');
       
       const currentTraceId = trace?.traceId || getCurrentTraceId();
       
@@ -156,7 +156,7 @@ function MemoryCalculator() {
   }, [processCalculate]);
 
   const clearResults = useCallback(() => {
-    const trace = startManualTrace('clear_results', 'manual.action');
+    const trace = startManualTrace('clear_results', 'action');
     const currentTraceId = trace?.traceId;
     
     if (currentTraceId) {
@@ -170,7 +170,7 @@ function MemoryCalculator() {
       previousResultLength: result?.length,
       previousResultBytes: result?.bytes?.toString(),
       previousTraceId: result?.traceId
-    }, 'manual.action');
+    }, 'action');
     
     setResult(null);
     setError('');
