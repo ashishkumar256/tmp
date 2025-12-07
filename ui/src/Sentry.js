@@ -131,7 +131,7 @@ export const startManualTrace = () => {
   
   // Create the main transaction
   const transaction = Sentry.startTransaction({
-    name: 'span_initiation',
+    name: 'manual.span_initiation',
     op: 'task',
   });
   

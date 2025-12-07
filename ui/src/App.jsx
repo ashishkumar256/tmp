@@ -42,7 +42,7 @@ function MemoryCalculator() {
     setResult(null);
     setError('');
     
-    const trace = startManualTrace('array_memory_calculation', 'task');
+    const trace = startManualTrace('manual.manual.memory_calculation', 'task');
     if (trace) {
       console.log(`[Trace Started] ID: ${trace.traceId}`);
     }
@@ -50,7 +50,7 @@ function MemoryCalculator() {
     let length;
     
     try {
-      const validationSpan = addManualSpan('input_validation', { input }, 'validation');
+      const validationSpan = addManualSpan('manual.input_validation', { input }, 'validation');
       
       if (!input) {
         throw new Error('Please enter an array length');
@@ -82,14 +82,14 @@ function MemoryCalculator() {
     const lenNum = Number(length);
     
     try {
-      const arraySpan = addManualSpan('array_creation', { length: lenNum }, 'process');
+      const arraySpan = addManualSpan('manual.array_creation', { length: lenNum }, 'process');
       const arr = new Array(lenNum);
       
       if (arraySpan && arraySpan.finish) {
         arraySpan.finish();
       }
       
-      const calcSpan = addManualSpan('memory_calculation', { length: lenNum }, 'compute');
+      const calcSpan = addManualSpan('manual.memory_calculation', { length: lenNum }, 'compute');
       const bytes = bytesForArrayLength(length);
       const hr = humanReadable(bytes);
       
@@ -97,7 +97,7 @@ function MemoryCalculator() {
         calcSpan.finish();
       }
       
-      const resultSpan = addManualSpan('result_processing', { 
+      const resultSpan = addManualSpan('manual.result_processing', { 
         bytes: bytes.toString(),
         readable: `${hr.value} ${hr.unit}`
       }, 'process');
@@ -156,7 +156,7 @@ function MemoryCalculator() {
   }, [processCalculate]);
 
   const clearResults = useCallback(() => {
-    const trace = startManualTrace('clear_results', 'action');
+    const trace = startManualTrace('manual.clear_results', 'action');
     const currentTraceId = trace?.traceId;
     
     if (currentTraceId) {
@@ -189,7 +189,7 @@ function MemoryCalculator() {
       Sentry.captureMessage("User cleared calculator results", {
         level: 'info',
         tags: { 
-          action: 'clear_results',
+          action: 'manual.clear_results',
           trace_id: currentTraceId,
           had_previous_result: !!result,
           had_previous_error: !!error
