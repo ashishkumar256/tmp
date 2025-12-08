@@ -151,9 +151,13 @@ function MemoryCalculator() {
 
   const handleKeyUp = useCallback((event) => {
     if (event.key === "Enter") {
-      processCalculate();
+      if (result || error) {
+        clearResults();
+      } else {
+        processCalculate();
+      }
     }
-  }, [processCalculate]);
+  }, [processCalculate, result, error]);
 
   const clearResults = useCallback(() => {
     const trace = startManualTrace('manual.clear_results', 'action');
@@ -209,6 +213,14 @@ function MemoryCalculator() {
     }
   }, [result, error, lengthInput]);
 
+  const handleButtonClick = useCallback(() => {
+    if (result || error) {
+      clearResults();
+    } else {
+      processCalculate();
+    }
+  }, [result, error, processCalculate, clearResults]);
+
   return (
     <div className="app">
       <header className="app-header">
@@ -234,20 +246,12 @@ function MemoryCalculator() {
               pattern="[0-9]*"
             />
             <button
-              className="btn btn-calculate"
-              onClick={processCalculate}
-              disabled={!lengthInput.trim()}
+              className={result || error ? "btn btn-secondary" : "btn btn-calculate"}
+              onClick={handleButtonClick}
+              disabled={!lengthInput.trim() && !(result || error)}
             >
-              Calculate
+              {result || error ? "Clear" : "Calculate"}
             </button>
-            {(result || error) && (
-              <button
-                onClick={clearResults}
-                className="btn btn-secondary"
-              >
-                Clear
-              </button>
-            )}
           </div>
           
           {error && (
