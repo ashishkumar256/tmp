@@ -240,15 +240,22 @@ function MemoryCalculator() {
             >
               Calculate
             </button>
+            <button
+              onClick={clearResults}
+              className="btn btn-secondary"
+              disabled={!result && !error}
+            >
+              Clear
+            </button>
           </div>
-        </div>
-        {error && (
-          <div className="error-message">
-            {error}
-          </div>
-        )}
-        {result && (
-          <div className="result-section">
+          
+          {error && (
+            <div className="error-message">
+              {error}
+            </div>
+          )}
+          
+          {result && (
             <div className="success-message">
               <div className="message-content">
                 Successfully calculated memory for Array({result.length.toLocaleString()}), estimated memory usage:
@@ -258,20 +265,9 @@ function MemoryCalculator() {
                 <span className="unit-only">{result.hrUnit}</span>
               </div>
             </div>
-            
-            {/* {result.traceId && (
-              <div className="trace-info">
-                <strong>Trace ID:</strong> {result.traceId}
-              </div>
-            )} */}
-            
-            <div className="action-buttons">
-              <button onClick={clearResults} className="btn btn-secondary">
-                Clear
-              </button>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
+        
         <div className="info-section">
           <h3>About this Calculator & Sentry Demo</h3>
           <ul>
