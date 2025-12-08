@@ -485,7 +485,6 @@ body {
   }
 }
 
-
 /* Output Container */
 .output-container {
   margin: 0.75rem 0;
@@ -498,11 +497,23 @@ body {
   padding: 1rem;
   box-shadow: var(--shadow-md);
   border: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
   position: relative;
   min-height: 60px;
+  display: flex;
+  align-items: center;
+  padding-right: 100px; /* Space for Clear button */
+}
+
+/* Output Text */
+.output-text {
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.4;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.25rem;
 }
 
 /* Error Output */
@@ -510,13 +521,6 @@ body {
   background: #fef2f2;
   border: 1px solid #fecaca;
   color: #dc2626;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  padding-right: 120px; /* Space for Clear button */
-  position: relative;
 }
 
 /* Success Output */
@@ -524,22 +528,6 @@ body {
   background: #f0fdf4;
   border: 1px solid #bbf7d0;
   color: #15803d;
-}
-
-/* Output Message */
-.output-message {
-  font-size: 0.8rem;
-  font-weight: 500;
-  line-height: 1.4;
-  margin-bottom: 0.25rem;
-}
-
-/* Output Result */
-.output-result {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
 }
 
 /* Clear Button - Fixed Position */
@@ -554,17 +542,19 @@ body {
   font-size: 0.8rem;
 }
 
-/* Value styling */
+/* Value styling - inline with text */
 .value-only {
   color: #0f766e;
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 0.9rem;
+  margin-left: 0.25rem;
 }
 
 .unit-only {
   color: #0f766e;
   font-weight: 500;
   font-size: 0.85rem;
+  margin-left: 0.125rem;
 }
 
 /* Responsive Design */
@@ -572,7 +562,7 @@ body {
   .output-content {
     padding: 0.875rem;
     min-height: 55px;
-    padding-right: 110px;
+    padding-right: 90px;
   }
   
   .clear-btn {
@@ -582,8 +572,16 @@ body {
     font-size: 0.75rem;
   }
   
-  .error-output {
-    padding-right: 110px;
+  .output-text {
+    font-size: 0.75rem;
+  }
+  
+  .value-only {
+    font-size: 0.85rem;
+  }
+  
+  .unit-only {
+    font-size: 0.8rem;
   }
 }
 
@@ -595,8 +593,7 @@ body {
   .output-content {
     padding: 0.75rem;
     min-height: 50px;
-    padding-right: 100px;
-    gap: 0.5rem;
+    padding-right: 85px;
   }
   
   .clear-btn {
@@ -606,25 +603,21 @@ body {
     font-size: 0.7rem;
   }
   
-  .error-output {
-    padding-right: 100px;
-  }
-  
-  .output-message {
-    font-size: 0.75rem;
+  .output-text {
+    font-size: 0.7rem;
+    line-height: 1.3;
   }
   
   .value-only {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
   }
   
   .unit-only {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
   }
 }
 
 /* For very long error messages */
-.error-output {
+.error-output .output-text {
   word-break: break-word;
-  padding-right: 120px;
 }

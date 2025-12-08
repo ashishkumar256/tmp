@@ -245,7 +245,9 @@ function MemoryCalculator() {
           {error && (
             <div className="output-container">
               <div className="output-content error-output">
-                {error}
+                <div className="output-text">
+                  {error}
+                </div>
                 <button
                   onClick={clearResults}
                   className="btn btn-secondary clear-btn"
@@ -259,19 +261,17 @@ function MemoryCalculator() {
           {result && (
             <div className="output-container">
               <div className="output-content success-output">
-                <div className="output-message">
-                  Successfully calculated memory for Array({result.length.toLocaleString()}), estimated memory usage:
-                </div>
-                <div className="output-result">
+                <div className="output-text">
+                  Successfully calculated memory for Array({result.length.toLocaleString()}), estimated memory usage:{" "}
                   <strong className="value-only">{result.hrValue}</strong>
                   <span className="unit-only">{result.hrUnit}</span>
-                  <button
-                    onClick={clearResults}
-                    className="btn btn-secondary clear-btn"
-                  >
-                    Clear
-                  </button>
                 </div>
+                <button
+                  onClick={clearResults}
+                  className="btn btn-secondary clear-btn"
+                >
+                  Clear
+                </button>
               </div>
             </div>
           )}
