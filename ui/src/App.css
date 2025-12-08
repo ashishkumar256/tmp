@@ -484,3 +484,147 @@ body {
     padding: 1rem;
   }
 }
+
+
+/* Output Container */
+.output-container {
+  margin: 0.75rem 0;
+}
+
+/* Output Content */
+.output-content {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 1rem;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  position: relative;
+  min-height: 60px;
+}
+
+/* Error Output */
+.error-output {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding-right: 120px; /* Space for Clear button */
+  position: relative;
+}
+
+/* Success Output */
+.success-output {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+}
+
+/* Output Message */
+.output-message {
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.4;
+  margin-bottom: 0.25rem;
+}
+
+/* Output Result */
+.output-result {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* Clear Button - Fixed Position */
+.clear-btn {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  min-width: 70px;
+  flex-shrink: 0;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+}
+
+/* Value styling */
+.value-only {
+  color: #0f766e;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.unit-only {
+  color: #0f766e;
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .output-content {
+    padding: 0.875rem;
+    min-height: 55px;
+    padding-right: 110px;
+  }
+  
+  .clear-btn {
+    right: 0.875rem;
+    min-width: 65px;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.75rem;
+  }
+  
+  .error-output {
+    padding-right: 110px;
+  }
+}
+
+@media (max-width: 480px) {
+  .output-container {
+    margin: 0.5rem 0;
+  }
+  
+  .output-content {
+    padding: 0.75rem;
+    min-height: 50px;
+    padding-right: 100px;
+    gap: 0.5rem;
+  }
+  
+  .clear-btn {
+    right: 0.75rem;
+    min-width: 60px;
+    padding: 0.35rem 0.5rem;
+    font-size: 0.7rem;
+  }
+  
+  .error-output {
+    padding-right: 100px;
+  }
+  
+  .output-message {
+    font-size: 0.75rem;
+  }
+  
+  .value-only {
+    font-size: 0.9rem;
+  }
+  
+  .unit-only {
+    font-size: 0.8rem;
+  }
+}
+
+/* For very long error messages */
+.error-output {
+  word-break: break-word;
+  padding-right: 120px;
+}
