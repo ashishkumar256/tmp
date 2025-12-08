@@ -262,7 +262,7 @@ function MemoryCalculator() {
             <div className="output-container">
               <div className="output-content success-output">
                 <div className="output-text">
-                  Successfully calculated memory for Array({result.length.toLocaleString()}), estimated memory usage:{" "}
+                  Estimated memory usage:
                   <strong className="value-only">{result.hrValue}</strong>
                   <span className="unit-only">{result.hrUnit}</span>
                 </div>
