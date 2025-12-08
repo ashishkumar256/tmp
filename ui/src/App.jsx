@@ -243,14 +243,13 @@ function MemoryCalculator() {
           </div>
           
           {error && (
-            <div className="error-message">
-              <div className="message-content">
+            <div className="error-message-container">
+              <div className="error-message">
                 {error}
               </div>
               <button
                 onClick={clearResults}
-                className="btn btn-secondary"
-                style={{ marginLeft: '10px', flexShrink: 0 }}
+                className="btn btn-secondary clear-btn"
               >
                 Clear
               </button>
@@ -258,21 +257,22 @@ function MemoryCalculator() {
           )}
           
           {result && (
-            <div className="success-message">
-              <div className="message-content">
-                Successfully calculated memory for Array({result.length.toLocaleString()}), estimated memory usage:
+            <div className="result-message-container">
+              <div className="success-message">
+                <div className="message-content">
+                  Successfully calculated memory for Array({result.length.toLocaleString()}), estimated memory usage:
+                </div>
+                <div className="result-value">
+                  <strong className="value-only">{result.hrValue}</strong>
+                  <span className="unit-only">{result.hrUnit}</span>
+                </div>
               </div>
-              <div className="result-value">
-                <strong className="value-only">{result.hrValue}</strong>
-                <span className="unit-only">{result.hrUnit}</span>
-                <button
-                  onClick={clearResults}
-                  className="btn btn-secondary"
-                  style={{ marginLeft: '10px' }}
-                >
-                  Clear
-                </button>
-              </div>
+              <button
+                onClick={clearResults}
+                className="btn btn-secondary clear-btn"
+              >
+                Clear
+              </button>
             </div>
           )}
         </div>
