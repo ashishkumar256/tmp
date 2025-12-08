@@ -151,13 +151,9 @@ function MemoryCalculator() {
 
   const handleKeyUp = useCallback((event) => {
     if (event.key === "Enter") {
-      if (result || error) {
-        clearResults();
-      } else {
-        processCalculate();
-      }
+      processCalculate();
     }
-  }, [processCalculate, result, error]);
+  }, [processCalculate]);
 
   const clearResults = useCallback(() => {
     const trace = startManualTrace('manual.clear_results', 'action');
@@ -213,14 +209,6 @@ function MemoryCalculator() {
     }
   }, [result, error, lengthInput]);
 
-  const handleButtonClick = useCallback(() => {
-    if (result || error) {
-      clearResults();
-    } else {
-      processCalculate();
-    }
-  }, [result, error, processCalculate, clearResults]);
-
   return (
     <div className="app">
       <header className="app-header">
@@ -246,17 +234,26 @@ function MemoryCalculator() {
               pattern="[0-9]*"
             />
             <button
-              className={result || error ? "btn btn-secondary" : "btn btn-calculate"}
-              onClick={handleButtonClick}
-              disabled={!lengthInput.trim() && !(result || error)}
+              className="btn btn-calculate"
+              onClick={processCalculate}
+              disabled={!lengthInput.trim()}
             >
-              {result || error ? "Clear" : "Calculate"}
+              Calculate
             </button>
           </div>
           
           {error && (
             <div className="error-message">
-              {error}
+              <div className="message-content">
+                {error}
+              </div>
+              <button
+                onClick={clearResults}
+                className="btn btn-secondary"
+                style={{ marginLeft: '10px', flexShrink: 0 }}
+              >
+                Clear
+              </button>
             </div>
           )}
           
@@ -268,6 +265,13 @@ function MemoryCalculator() {
               <div className="result-value">
                 <strong className="value-only">{result.hrValue}</strong>
                 <span className="unit-only">{result.hrUnit}</span>
+                <button
+                  onClick={clearResults}
+                  className="btn btn-secondary"
+                  style={{ marginLeft: '10px' }}
+                >
+                  Clear
+                </button>
               </div>
             </div>
           )}
