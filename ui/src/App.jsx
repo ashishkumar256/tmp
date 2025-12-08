@@ -240,13 +240,14 @@ function MemoryCalculator() {
             >
               Calculate
             </button>
-            <button
-              onClick={clearResults}
-              className="btn btn-secondary"
-              disabled={!result && !error}
-            >
-              Clear
-            </button>
+            {(result || error) && (
+              <button
+                onClick={clearResults}
+                className="btn btn-secondary"
+              >
+                Clear
+              </button>
+            )}
           </div>
           
           {error && (
