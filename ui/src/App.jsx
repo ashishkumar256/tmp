@@ -212,7 +212,7 @@ function MemoryCalculator() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>JavaScript Array Memory Usage (Estimated) Calculation</h1>
+        <h1>Array Memory Usage (Estimated) Calculation</h1>
         <p>Sentry: Manual Tracing + Error Capture Demo</p>
         <div className="env-info">
           <strong>Sentry Status:</strong> {import.meta.env.VITE_SENTRY_DSN ? 'Active' : 'Not Configured'}
@@ -280,7 +280,7 @@ function MemoryCalculator() {
         <div className="info-section">
           <h3>About this Calculator & Sentry Demo</h3>
           <ul>
-            <li>Estimates memory usage assuming each array element is a JavaScript Number (8 bytes)</li>
+            <li>Estimates memory usage based on each array element being 8 bytes</li>
             <li>Shows large values to human-readable format (KB, MB, GB, etc.)</li>
             <li><strong>Integer-only input:</strong> Only whole numbers are allowed</li>
             <li><strong>Test with 4294967296</strong> to trigger an unhandled RangeError that Sentry will capture</li>
