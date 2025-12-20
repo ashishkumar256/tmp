@@ -42,7 +42,7 @@ function MemoryCalculator() {
     setResult(null);
     setError('');
     
-    const trace = startManualTrace('manual.manual.memory_calculation', 'task');
+    const trace = startManualTrace('manual.memory_calculation', 'task');
     if (trace) {
       console.log(`[Trace Started] ID: ${trace.traceId}`);
     }
